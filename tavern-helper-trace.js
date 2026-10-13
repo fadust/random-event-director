@@ -49,20 +49,20 @@ export function installTavernHelperTrace({ host = globalThis, doc = host.documen
                 && !Object.values(eventTypes).filter(x => /generat|message/i.test(x)).includes(args[0])
                 && !['js_generation_requested', 'js_generation_started', 'js_generation_ended'].includes(args[0])) return original.apply(this, args);
             const identified = source ? { ...source, ...(metadata.get(source.scriptId) || {}) } : sourceFromStack(new Error().stack);
-            const call = { id: `助手调用 ${++callNumber}`, method, ...(identified || {
-                scriptName: '未知', scriptId: '', scriptScope: 'unknown' }), caller: callerEvidence(new Error().stack), metadata: chatMetadata() };
+            const call = { id: `Helper call ${++callNumber}`, method, ...(identified || {
+                scriptName: 'Unknown', scriptId: '', scriptScope: 'unknown' }), caller: callerEvidence(new Error().stack), metadata: chatMetadata() };
             calls.set(call.id, call);
-            log('酒馆助手脚本调用', 'info', identified ? '直接捕获到此脚本调用助手接口；接口调用不等于已经发送 HTTP 请求。'
-                : '捕获到助手接口调用，但没有可确认的脚本身份。',
+            log('Tavern Helper script call', 'info', identified ? 'Captured this script calling the Helper API directly; an API call is not the same as an HTTP request being sent.'
+                : 'Captured a Helper API call, but the script identity cannot be confirmed.',
                 { ...describe(call), scriptEvidence: identified ? 'api-call' : 'unknown' });
             const before = current; current = call;
             let result;
             try { result = original.apply(this, args); }
-            catch (error) { calls.delete(call.id); log('酒馆助手调用结束', 'warn', '助手接口抛出异常；保留原异常，不记录错误原文。', describe(call)); throw error; }
+            catch (error) { calls.delete(call.id); log('Tavern Helper call finished', 'warn', 'The Helper API threw an exception; the original exception is kept and the error text is not recorded.', describe(call)); throw error; }
             finally { current = before; }
             const finish = failed => {
                 calls.delete(call.id);
-                log('酒馆助手调用结束', failed ? 'warn' : 'info', failed ? '助手调用未正常完成；不记录结果或原始错误。' : '助手调用已结束；不记录返回内容。', describe(call));
+                log('Tavern Helper call finished', failed ? 'warn' : 'info', failed ? 'The Helper call did not finish normally; result and raw error are not recorded.' : 'The Helper call finished; the returned content is not recorded.', describe(call));
             };
             // Return the original result/promise unchanged; don't serialize arguments or results.
             if (result && typeof result.then === 'function') result.then(() => finish(false), () => finish(true));
@@ -77,7 +77,7 @@ export function installTavernHelperTrace({ host = globalThis, doc = host.documen
         if (helper && !helperSeen) {
             helperSeen = true;
             let version = ''; try { version = clean(helper.getTavernHelperVersion?.()); } catch { /* Optional API. */ }
-            log('酒馆助手连接', 'info', '已连接酒馆助手诊断。脚本列表只表示配置或窗口状态；直接调用和请求关联分别记录。', { helperAvailable: true, helperVersion: version || '未知' });
+            log('Tavern Helper connection', 'info', 'Connected to Tavern Helper diagnostics. The script list only shows configuration or window state; direct calls and request links are recorded separately.', { helperAvailable: true, helperVersion: version || 'Unknown' });
         }
         for (const method of METHODS) wrap(helper, method, null);
         let present = [];
@@ -125,12 +125,12 @@ export function installTavernHelperTrace({ host = globalThis, doc = host.documen
             const ownerMetadata = chatMetadata();
             if (force || key !== inventoryKey || ownerMetadata !== lastMetadata) {
                 inventoryKey = key; lastMetadata = ownerMetadata;
-                log('酒馆助手脚本查询', helper ? 'info' : 'warn', helper ? '查询全局、预设和当前角色卡脚本；启用或窗口存在不代表它发起了当前请求。'
-                    : '当前没有发现酒馆助手；加载后会自动接入并查询。',
+                log('Tavern Helper script query', helper ? 'info' : 'warn', helper ? 'Querying global, preset and current character card scripts; being enabled or having a window does not mean a script started the current request.'
+                    : 'Tavern Helper not found yet; it will connect and query automatically once loaded.',
                     { helperAvailable: Boolean(helper), scriptListAvailable: typeof helper?.getScriptTrees === 'function', scriptCount: rows.length });
-                for (const row of rows.slice(0, 100)) log('酒馆助手脚本状态', 'info', '只记录脚本名字、标识和状态，不记录或执行脚本内容。', row);
+                for (const row of rows.slice(0, 100)) log('Tavern Helper script status', 'info', 'Only script names, identifiers and status are recorded; script content is never recorded or executed.', row);
             }
-        } catch { log('酒馆助手脚本查询', 'warn', '助手查询接口暂不可用；继续普通请求诊断，不影响生成。'); }
+        } catch { log('Tavern Helper script query', 'warn', 'The Helper query API is unavailable for now; regular request diagnostics continue and generation is unaffected.'); }
     }
     function evidence(stack = '') {
         if (current) return { ...describe(current), scriptEvidence: current.scriptId ? 'api-call' : 'unknown' };
@@ -139,7 +139,7 @@ export function installTavernHelperTrace({ host = globalThis, doc = host.documen
         const sameChat = [...calls.values()].filter(c => c.metadata === chatMetadata() && ['generate', 'generateRaw', 'triggerSlash', 'triggerSlashWithResult'].includes(c.method));
         if (!sameChat.length) return { scriptEvidence: 'unknown' };
         return { scriptEvidence: 'candidate', helperActiveCalls: sameChat.length,
-            candidateScripts: [...new Set(sameChat.map(c => `${c.scriptName}（${c.id}）`))].join('；').slice(0, 500) };
+            candidateScripts: [...new Set(sameChat.map(c => `${c.scriptName} (${c.id})`))].join('; ').slice(0, 500) };
     }
     function onEvent(name, args) {
         if (refreshEvents.has(name)) scheduleQuery();
@@ -154,7 +154,7 @@ export function installTavernHelperTrace({ host = globalThis, doc = host.documen
         }
         const call = generations.get(generationId), details = call
             ? { ...describe(call), scriptEvidence: call.scriptId ? 'generation-id' : 'unknown' } : evidence();
-        log('酒馆助手生成通知', 'info', '助手生成生命周期通知；与实际 HTTP 请求分开计数，不记录正文或配置。', { helperEvent: name, ...details });
+        log('Tavern Helper generation notice', 'info', 'Helper generation lifecycle notice; counted separately from actual HTTP requests, without recording text or settings.', { helperEvent: name, ...details });
         if (name === 'js_generation_ended') generations.delete(generationId);
         return details;
     }

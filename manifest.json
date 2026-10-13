@@ -1,12 +1,13 @@
 {
-  "display_name": "随机事件导演",
+  "display_name": "Random Event Director (English)",
   "loading_order": 20,
   "requires": [],
   "optional": [],
   "js": "index.js",
   "css": "style.css",
   "generate_interceptor": "randomEventDirectorInterceptor",
-  "author": "Random Event Director contributors",
+  "author": "Random Event Director contributors · English port by fadust",
   "version": "1.1.0",
-  "auto_update": false
+  "auto_update": false,
+  "homePage": "https://github.com/fadust/random-event-director"
 }

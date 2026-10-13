@@ -16,43 +16,44 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
     doc.querySelector('#red_director_event_window')?.remove();
     const window = doc.createElement('section');
     window.id = 'red_director_window'; window.className = 'red-window'; window.hidden = true;
-    window.setAttribute('role', 'dialog'); window.setAttribute('aria-label', '导演系统-初月');
-    window.innerHTML = `<header class="red-window-head"><div class="red-window-title"><span class="red-moon" aria-hidden="true">☾</span><div><strong>导演系统-初月</strong><small>先聊想法，再决定下一幕</small></div></div>
-      <div class="red-window-tools"><div class="red-size-switch" role="group" aria-label="窗口大小"><button type="button" data-size="large" aria-label="大窗口" aria-pressed="false">大</button><button type="button" data-size="medium" aria-label="中窗口" aria-pressed="true">中</button><button type="button" data-size="small" aria-label="小窗口" aria-pressed="false">小</button></div><button type="button" data-window="maximize" aria-label="放大窗口" title="放大 / 还原">⛶</button><button type="button" data-window="close" aria-label="关闭导演窗口" title="关闭">×</button></div></header>
-      <nav class="red-tabs" aria-label="导演系统页面"><button type="button" data-view="chat" aria-pressed="true">剧情讨论</button><button type="button" data-view="events" aria-pressed="false">随机事件</button><button type="button" data-view="pool" aria-pressed="false">事件池</button><button type="button" data-view="settings" aria-pressed="false">设置</button><button type="button" data-view="logs" aria-pressed="false">诊断日志</button></nav><div class="red-owner" data-window-role="owner"></div>
-      <div class="red-chat-view" data-page="chat"><div class="red-persona-chatbar"><small data-window-role="persona-hint"></small><label>聊天人设 <select data-window-role="persona" aria-label="小窗聊天人设"></select></label></div><div class="red-guide-status" data-window-role="guide-status"></div>
-        <div class="red-transcript" data-window-role="messages" role="log" aria-label="导演讨论记录" aria-live="polite"></div>
-        <div class="red-proposal" data-window-role="proposal" hidden><div class="red-summary-card"><strong><span aria-hidden="true">✧</span> 本次方向总结</strong><p data-window-role="summary"></p></div><div class="red-window-actions"><button type="button" data-window="accept">应用到下一次事件</button><button type="button" data-window="reject">不应用</button></div><small>也可以直接继续讨论，上一份未确认总结会自动作废。</small></div>
+    window.setAttribute('role', 'dialog'); window.setAttribute('aria-label', 'Director System - Chuyue');
+    window.innerHTML = `<header class="red-window-head"><div class="red-window-title"><span class="red-moon" aria-hidden="true">☾</span><div><strong>Director System - Chuyue</strong><small>Talk ideas through, then decide the next scene</small></div></div>
+      <div class="red-window-tools"><div class="red-size-switch" role="group" aria-label="Window size"><button type="button" data-size="large" aria-label="Large window" aria-pressed="false">L</button><button type="button" data-size="medium" aria-label="Medium window" aria-pressed="true">M</button><button type="button" data-size="small" aria-label="Small window" aria-pressed="false">S</button></div><button type="button" data-window="maximize" aria-label="Maximize window" title="Maximize / restore">⛶</button><button type="button" data-window="close" aria-label="Close director window" title="Close">×</button></div></header>
+      <nav class="red-tabs" aria-label="Director system pages"><button type="button" data-view="chat" aria-pressed="true">Story discussion</button><button type="button" data-view="events" aria-pressed="false">Random events</button><button type="button" data-view="pool" aria-pressed="false">Event pool</button><button type="button" data-view="settings" aria-pressed="false">Settings</button><button type="button" data-view="logs" aria-pressed="false">Diagnostic log</button></nav><div class="red-owner" data-window-role="owner"></div>
+      <div class="red-chat-view" data-page="chat"><div class="red-persona-chatbar"><small data-window-role="persona-hint"></small><label>Chat persona <select data-window-role="persona" aria-label="Side-window chat persona"></select></label></div><div class="red-guide-status" data-window-role="guide-status"></div>
+        <div class="red-transcript" data-window-role="messages" role="log" aria-label="Director discussion transcript" aria-live="polite"></div>
+        <div class="red-proposal" data-window-role="proposal" hidden><div class="red-summary-card"><strong><span aria-hidden="true">✧</span> Direction summary</strong><p data-window-role="summary"></p></div><div class="red-window-actions"><button type="button" data-window="accept">Apply to the next event</button><button type="button" data-window="reject">Don't apply</button></div><small>You can also keep discussing; the previous unconfirmed summary expires automatically.</small></div>
         <p class="red-window-notice" data-window-role="notice" role="status"></p>
-        <div class="red-composer"><textarea rows="2" maxlength="4000" aria-label="导演讨论输入" placeholder="说说你想要的方向…\nEnter 发送，Shift+Enter 换行"></textarea><button type="button" data-window="send" aria-label="发送导演讨论">发送</button><button type="button" data-window="stop" hidden>停止</button></div>
-        <footer class="red-chat-footer"><button type="button" data-window="clear">清空讨论记录</button><small>仅当前聊天 · 确认后只影响一次事件</small></footer>
+        <div class="red-composer"><textarea rows="2" maxlength="4000" aria-label="Director discussion input" placeholder="Describe the direction you want…
+Enter to send, Shift+Enter for a new line"></textarea><button type="button" data-window="send" aria-label="Send to director">Send</button><button type="button" data-window="stop" hidden>Stop</button></div>
+        <footer class="red-chat-footer"><button type="button" data-window="clear">Clear discussion</button><small>Current chat only · once confirmed, affects one event</small></footer>
       </div><div class="red-events-view" data-page="events" hidden>
-        <div class="red-page-heading"><span class="red-eyebrow">故事的下一幕</span><h2>随机事件</h2><p>一点意外，让故事自然往前走。</p></div>
-        <label class="red-event-toggle"><input type="checkbox" data-window-role="enable-events">开启本聊天的随机事件</label>
-        <aside class="red-major-status" data-major-card hidden><small>重大事件</small><strong data-major-role="title"></strong><span data-major-role="turns"></span><button type="button" data-window="end-major">结束重大事件</button></aside>
-        <div class="red-event-stats"><div><small>可用事件</small><strong data-window-role="event-count"></strong></div><div><small data-window-role="event-trigger-label">触发概率</small><strong data-window-role="event-probability"></strong></div></div>
-        <div class="red-event-actions"><button type="button" class="red-dice-button" data-window="roll" aria-label="投掷十面骰，启用一个事件">${D10}<span data-window-role="dice-label">投掷并启用事件</span></button><div class="red-event-pool-actions"><button type="button" data-window="prepare-pool">准备 / 更新事件池</button><button type="button" data-window="reroll" title="废弃待用事件，从剩余候选中重新随机抽取">重新投掷</button></div></div>
-        <button type="button" class="red-pool-link" data-view="pool">完整事件池 →</button>
-        <article class="red-event-card"><div class="red-event-card-label"><span aria-hidden="true">☾</span><span data-window-role="event-label"></span></div><h3 data-window-role="event-title"></h3><p data-window-role="event-hint"></p><details data-window-role="event-reveal" hidden><summary>查看事件内容（可能剧透）</summary><p data-window-role="event-content"></p></details></article>
-        <p class="red-event-notice" data-window-role="event-notice" role="status"></p><small class="red-event-footnote">点击骰子自动开启当前聊天并抽取一个事件；继续主聊天时生效，不会自动发送消息。</small>
-        <div class="red-event-recent"><small>最近触发</small><span data-window-role="event-recent"></span></div><button type="button" class="red-text-button" data-view="settings">调整概率、上下文与预设 →</button>
-      </div><div class="red-pool-view" data-page="pool" hidden><div class="red-page-heading"><span class="red-eyebrow">当前聊天 · 可能剧透</span><h2>完整事件池</h2><p data-window-role="pool-count"></p></div><div class="red-window-actions"><button type="button" data-window="regenerate-pool">重新生成</button></div><p class="red-help">重新生成会废弃普通候选池并重新生成，已抽取事件保留。</p><p class="red-event-notice" data-window-role="pool-notice" role="status"></p><div data-window-role="pool-list"></div><button type="button" data-view="events">返回随机事件</button></div><div class="red-settings-view" data-page="settings" hidden><div class="red-page-heading"><span class="red-eyebrow">让初月更懂你的故事</span><h2>导演设置</h2></div><p class="red-settings-intro">配置副 AI、预设与随机事件。API 连接和预设库可共用，当前聊天的选择独立保存。</p></div><div class="red-diagnostics-view" data-page="logs" hidden></div>`;
+        <div class="red-page-heading"><span class="red-eyebrow">The story's next scene</span><h2>Random events</h2><p>A little surprise to move the story along naturally.</p></div>
+        <label class="red-event-toggle"><input type="checkbox" data-window-role="enable-events">Turn on random events for this chat</label>
+        <aside class="red-major-status" data-major-card hidden><small>Major event</small><strong data-major-role="title"></strong><span data-major-role="turns"></span><button type="button" data-window="end-major">End major event</button></aside>
+        <div class="red-event-stats"><div><small>Available events</small><strong data-window-role="event-count"></strong></div><div><small data-window-role="event-trigger-label">Trigger probability</small><strong data-window-role="event-probability"></strong></div></div>
+        <div class="red-event-actions"><button type="button" class="red-dice-button" data-window="roll" aria-label="Roll the ten-sided die to enable an event">${D10}<span data-window-role="dice-label">Roll and enable an event</span></button><div class="red-event-pool-actions"><button type="button" data-window="prepare-pool">Prepare / update event pool</button><button type="button" data-window="reroll" title="Discard the pending event and draw again at random from the remaining candidates">Reroll</button></div></div>
+        <button type="button" class="red-pool-link" data-view="pool">Full event pool →</button>
+        <article class="red-event-card"><div class="red-event-card-label"><span aria-hidden="true">☾</span><span data-window-role="event-label"></span></div><h3 data-window-role="event-title"></h3><p data-window-role="event-hint"></p><details data-window-role="event-reveal" hidden><summary>View event content (may spoil)</summary><p data-window-role="event-content"></p></details></article>
+        <p class="red-event-notice" data-window-role="event-notice" role="status"></p><small class="red-event-footnote">Clicking the die turns on the current chat and draws an event; it takes effect when you continue the main chat and never sends a message by itself.</small>
+        <div class="red-event-recent"><small>Last triggered</small><span data-window-role="event-recent"></span></div><button type="button" class="red-text-button" data-view="settings">Adjust probability, context and presets →</button>
+      </div><div class="red-pool-view" data-page="pool" hidden><div class="red-page-heading"><span class="red-eyebrow">Current chat · may spoil</span><h2>Full event pool</h2><p data-window-role="pool-count"></p></div><div class="red-window-actions"><button type="button" data-window="regenerate-pool">Regenerate</button></div><p class="red-help">Regenerating discards the regular candidate pool and generates a new one; drawn events are kept.</p><p class="red-event-notice" data-window-role="pool-notice" role="status"></p><div data-window-role="pool-list"></div><button type="button" data-view="events">Back to random events</button></div><div class="red-settings-view" data-page="settings" hidden><div class="red-page-heading"><span class="red-eyebrow">Help Chuyue understand your story</span><h2>Director settings</h2></div><p class="red-settings-intro">Configure the secondary AI, presets and random events. The API connection and preset library are shared; the current chat's choices are saved separately.</p></div><div class="red-diagnostics-view" data-page="logs" hidden></div>`;
     const diceDock = doc.createElement('div'); diceDock.id = 'red_director_dice_dock';
-    diceDock.innerHTML = `<aside class="red-major-status" data-major-card hidden aria-label="当前重大事件"><small>重大事件</small><strong data-major-role="title"></strong><span data-major-role="turns" aria-live="polite"></span><button type="button" data-major-action="end">结束重大事件</button></aside><button type="button" class="red-floating-die" aria-label="投掷十面骰，启用一个事件">${D10}</button><span class="red-dice-feedback" role="status" aria-live="polite"></span>`;
+    diceDock.innerHTML = `<aside class="red-major-status" data-major-card hidden aria-label="Current major event"><small>Major event</small><strong data-major-role="title"></strong><span data-major-role="turns" aria-live="polite"></span><button type="button" data-major-action="end">End major event</button></aside><button type="button" class="red-floating-die" aria-label="Roll the ten-sided die to enable an event">${D10}</button><span class="red-dice-feedback" role="status" aria-live="polite"></span>`;
     const eventWindow = doc.createElement('section'); eventWindow.id = 'red_director_event_window'; eventWindow.hidden = true;
-    eventWindow.setAttribute('role', 'dialog'); eventWindow.setAttribute('aria-label', '本轮随机事件');
-    eventWindow.innerHTML = `<header class="red-mini-head"><div class="red-mini-titlebar"><span>☾ <span data-mini="label">本轮随机事件</span></span><button type="button" data-mini-action="director">打开导演系统 <span aria-hidden="true">↗</span></button><button type="button" data-mini-action="close" aria-label="关闭事件小窗">×</button></div><div class="red-mini-toolbar"><label class="red-mini-toggle"><input type="checkbox" data-mini="enabled"> 开启随机事件</label><button type="button" class="red-mini-mode-stack" data-mini="dice-mode" data-mini-action="switch-mode" data-mode="pool" aria-label="切换投掷方式，当前常规投掷"><span class="red-mini-mode-card" data-mode-card="pool" aria-hidden="true"><strong>常规投掷</strong><small>从当前事件池中抽取</small></span><span class="red-mini-mode-card" data-mode-card="instant" aria-hidden="true"><strong>即时投掷</strong><small>围绕眼前情境，即时生成并抽取</small></span></button></div></header><div class="red-mini-body"><div class="red-mini-event"><h3 data-mini="title"></h3><p data-mini="hint"></p><details data-mini="reveal" hidden><summary>查看事件内容（可能剧透）</summary><p data-mini="content"></p></details><p data-mini="notice" role="status" aria-live="polite"></p><div class="red-mini-failure-actions" data-mini="failure-actions" hidden><button type="button" data-mini-action="retry">重试生成</button><button type="button" data-mini-action="logs">查看日志</button></div></div></div><footer><button type="button" data-mini-action="roll">点击投掷</button></footer>`;
+    eventWindow.setAttribute('role', 'dialog'); eventWindow.setAttribute('aria-label', 'This round\'s random event');
+    eventWindow.innerHTML = `<header class="red-mini-head"><div class="red-mini-titlebar"><span>☾ <span data-mini="label">This round's random event</span></span><button type="button" data-mini-action="director">Open director system <span aria-hidden="true">↗</span></button><button type="button" data-mini-action="close" aria-label="Close event window">×</button></div><div class="red-mini-toolbar"><label class="red-mini-toggle"><input type="checkbox" data-mini="enabled"> Turn on random events</label><button type="button" class="red-mini-mode-stack" data-mini="dice-mode" data-mini-action="switch-mode" data-mode="pool" aria-label="Switch roll mode, currently Regular roll"><span class="red-mini-mode-card" data-mode-card="pool" aria-hidden="true"><strong>Regular roll</strong><small>Draw from the current event pool</small></span><span class="red-mini-mode-card" data-mode-card="instant" aria-hidden="true"><strong>Instant roll</strong><small>Generate and draw on the spot from the current situation</small></span></button></div></header><div class="red-mini-body"><div class="red-mini-event"><h3 data-mini="title"></h3><p data-mini="hint"></p><details data-mini="reveal" hidden><summary>View event content (may spoil)</summary><p data-mini="content"></p></details><p data-mini="notice" role="status" aria-live="polite"></p><div class="red-mini-failure-actions" data-mini="failure-actions" hidden><button type="button" data-mini-action="retry">Retry generation</button><button type="button" data-mini-action="logs">View log</button></div></div></div><footer><button type="button" data-mini-action="roll">Click to roll</button></footer>`;
     const miniToggle = eventWindow.querySelector('.red-mini-toggle');
     miniToggle.addEventListener('pointerdown', event => event.stopPropagation());
     doc.body.append(window, diceDock, eventWindow);
     const floatingDie = diceDock.querySelector('.red-floating-die'), diceFeedback = diceDock.querySelector('.red-dice-feedback');
-    for (const die of [floatingDie, window.querySelector('[data-window="roll"]')]) die.setAttribute('aria-label', '打开骰子事件小窗');
+    for (const die of [floatingDie, window.querySelector('[data-window="roll"]')]) die.setAttribute('aria-label', 'Open the dice event window');
     const entry = doc.createElement('div'); entry.id = 'red_director_entry'; entry.className = 'inline-drawer red-extension-entry';
-    entry.innerHTML = `<div class="inline-drawer-toggle inline-drawer-header"><b>导演系统-初月 <small>V${CURRENT_VERSION}</small></b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div><div class="inline-drawer-content" style="display: none;"><p>和初月讨论剧情，或设置随机事件。</p><div class="red-entry-actions"><button class="menu_button menu_button_icon" type="button" data-launch="chat">打开导演系统</button><button class="menu_button menu_button_icon" type="button" data-launch="events">随机事件</button><button class="menu_button menu_button_icon" type="button" data-launch="settings">导演设置</button><button class="menu_button menu_button_icon" type="button" data-launch="logs">诊断日志</button></div></div>`;
+    entry.innerHTML = `<div class="inline-drawer-toggle inline-drawer-header"><b>Director System - Chuyue <small>V${CURRENT_VERSION}</small></b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div><div class="inline-drawer-content" style="display: none;"><p>Discuss the story with Chuyue, or set up random events.</p><div class="red-entry-actions"><button class="menu_button menu_button_icon" type="button" data-launch="chat">Open director system</button><button class="menu_button menu_button_icon" type="button" data-launch="events">Random events</button><button class="menu_button menu_button_icon" type="button" data-launch="settings">Director settings</button><button class="menu_button menu_button_icon" type="button" data-launch="logs">Diagnostic log</button></div></div>`;
     settingsHost.append(entry); window.querySelector('[data-page="settings"]').append(settings); settings.open = true;
     const get = name => window.querySelector(`[data-window-role="${name}"]`);
     const personaSettings = doc.createElement('div'); personaSettings.className = 'red-persona-settings';
-    personaSettings.innerHTML = '<label>新聊天默认人设<select data-window-role="default-persona" aria-label="新聊天默认人设"></select></label><p class="red-help">只影响小窗聊天口吻。当前聊天在剧情讨论页右上角选择；修改默认值只用于尚未设置人设的新聊天。</p>';
+    personaSettings.innerHTML = '<label>Default persona for new chats<select data-window-role="default-persona" aria-label="Default persona for new chats"></select></label><p class="red-help">Only affects the side-window chat tone. For the current chat, choose at the top right of the story discussion page; the default only applies to new chats without a persona set.</p>';
     window.querySelector('[data-page="settings"]').insertBefore(personaSettings, settings);
     const updateUI = mountUpdateUI(window, entry, context, doc);
     settings.after(window.querySelector('.red-update-settings'));
@@ -61,7 +62,7 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
         const option = doc.createElement('option'); option.value = persona.id; option.textContent = persona.name; select.append(option);
     }
     const button = name => window.querySelector(`[data-window="${name}"]`);
-    const input = window.querySelector('textarea[aria-label="导演讨论输入"]');
+    const input = window.querySelector('textarea[aria-label="Director discussion input"]');
     const diagnosticsUI = mountDiagnosticsUI(window.querySelector('[data-page="logs"]'), director.diagnostics, doc);
     let page = 'chat', owner = null, notice = '', eventNotice = '', pendingId = null, transcriptKey = '', poolKey = '', lastFocus = null;
     let disposed = false, eventTask = null, diceAnimating = false, diceTimer = null, animationUntil = 0, shownFailureId = null;
@@ -76,7 +77,7 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
         window.dataset.size = size; window.classList.remove('red-maximized');
         for (const property of ['width', 'height', 'left', 'top', 'right', 'bottom']) window.style.removeProperty(property);
         for (const item of window.querySelectorAll('[data-size]')) item.setAttribute('aria-pressed', String(item.dataset.size === size));
-        button('maximize').setAttribute('aria-label', '放大窗口');
+        button('maximize').setAttribute('aria-label', 'Maximize window');
         if (!window.hidden) placeWidget(window);
         if (persist) {
             const ctx = context();
@@ -109,59 +110,60 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
     function renderPool(state) {
         const pending = state?.pendingEvent?.event;
         const candidates = state?.eventPool || [], guided = (state?.discussion?.guide?.pool || []).filter(item => item.id !== pending?.id);
-        get('pool-count').textContent = `已抽取 ${pending ? 1 : 0} · ${state?.majorEvent ? '重大事件相关候选' : '普通候选'} ${candidates.length} · 本次方向候选 ${guided.length}`;
+        get('pool-count').textContent = `Drawn ${pending ? 1 : 0} · ${state?.majorEvent ? 'Major-event candidates' : 'Regular candidates'} ${candidates.length} · directed candidates this time ${guided.length}`;
         const key = JSON.stringify([state?.owner, pending, candidates, guided, state?.majorEvent?.id]);
         if (key === poolKey) return;
         poolKey = key; const list = get('pool-list'); list.replaceChildren();
-        for (const [label, events] of [['已抽取 · 等待本轮生效', pending ? [pending] : []], [state?.majorEvent ? '重大事件相关事件池' : '普通事件池', candidates], ['本次讨论方向 · 仅生效一次', guided]]) {
+        for (const [label, events] of [['Drawn · waiting for this round', pending ? [pending] : []], [state?.majorEvent ? 'Major-event pool' : 'Regular event pool', candidates], ['This discussion\'s direction · applies once', guided]]) {
             if (!events.length) continue;
             const heading = doc.createElement('h3'); heading.textContent = label; list.append(heading);
             for (const event of events) {
                 const detail = doc.createElement('details'), title = doc.createElement('summary'), content = doc.createElement('p');
-                title.textContent = `${event.severity === 'major' ? '重大 · ' : ''}${event.title}`; content.textContent = event.content; detail.append(title, content); list.append(detail);
+                title.textContent = `${event.severity === 'major' ? 'Major · ' : ''}${event.title}`; content.textContent = event.content; detail.append(title, content); list.append(detail);
             }
         }
-        if (!list.childNodes.length) { const empty = doc.createElement('p'); empty.textContent = state ? '事件池还没有内容。到随机事件页准备事件，或直接点击骰子。' : '请先打开一个聊天。'; list.append(empty); }
+        if (!list.childNodes.length) { const empty = doc.createElement('p'); empty.textContent = state ? 'The event pool is empty. Prepare events on the random events page, or just click the die.' : 'Open a chat first.'; list.append(empty); }
     }
     function refresh() {
         const state = director.state(), disc = state?.discussion, currentOwner = state?.owner || null;
         if (owner !== currentOwner) { owner = currentOwner; shownFailureId = null; input.value = ''; notice = ''; eventNotice = ''; transcriptKey = ''; pendingId = null; get('event-reveal').open = false; eventWindow.hidden = true; mini('reveal').open = false; }
-        const ctx = context(); get('owner').textContent = state ? `${ctx.name2 || '当前角色'} · 当前聊天` : '未打开聊天 · 正在配置新聊天默认值';
+        const ctx = context(); get('owner').textContent = state ? `${ctx.name2 || 'Current character'} · current chat` : 'No chat open · configuring defaults for new chats';
         const persona = discussionPersona(disc?.persona);
         get('persona').value = persona.id; get('persona').disabled = !state || Boolean(director.discussion?.chatTask);
         get('persona-hint').textContent = persona.description;
         get('default-persona').value = normalizePersona(ctx.extensionSettings?.[PERSONA_PREFERENCES_KEY]?.defaultPersona);
         get('default-persona').disabled = !ctx.extensionSettings;
-        input.placeholder = `说说你想要的方向，也可以让${persona.name}提建议…\nEnter 发送，Shift+Enter 换行`;
+        input.placeholder = `Describe the direction you want, or ask ${persona.name} for suggestions…
+Enter to send, Shift+Enter for a new line`;
         const key = JSON.stringify([disc?.messages, disc?.persona, Boolean(director.discussion?.chatTask)]);
         if (key !== transcriptKey) {
             transcriptKey = key; const log = get('messages'); log.replaceChildren();
             if (!disc?.messages.length) {
                 const intro = doc.createElement('div'); intro.className = 'red-chat-intro';
-                intro.innerHTML = `<span class="red-intro-moon" aria-hidden="true">${persona.mark}</span><strong>和${persona.name}一起想想故事的下一步</strong><p>描述你想要的氛围、变化或禁忌。没有想法时，${persona.name}也可以提出建议。</p><button type="button" data-starter="接下来可以发生什么？给我几个自然的方向。">接下来可以发生什么？</button><button type="button" data-starter="帮我梳理当前剧情，再建议一个适合的小变化。">帮我理一理当前剧情</button>`; log.append(intro);
+                intro.innerHTML = `<span class="red-intro-moon" aria-hidden="true">${persona.mark}</span><strong>Think about the story's next step with ${persona.name}</strong><p>Describe the mood, change or no-gos you want. If you have no ideas, ${persona.name} can make suggestions too.</p><button type="button" data-starter="What could happen next? Give me a few natural directions.">What could happen next?</button><button type="button" data-starter="Help me sort out the current story, then suggest a fitting small change.">Help me sort out the story</button>`; log.append(intro);
             }
             for (const message of disc?.messages || []) {
                 const bubble = doc.createElement('article'); bubble.className = `red-bubble red-${message.role}`;
                 const author = doc.createElement('small'), text = doc.createElement('p'), avatar = doc.createElement('span'), body = doc.createElement('div');
                 const speaker = message.persona ? discussionPersona(message.persona) : null;
-                avatar.className = 'red-chat-avatar'; avatar.setAttribute('aria-hidden', 'true'); avatar.textContent = message.role === 'user' ? '你' : speaker?.mark || '☾'; body.className = 'red-bubble-body';
-                author.textContent = message.role === 'user' ? '你' : speaker?.name || '初月'; text.textContent = message.content;
+                avatar.className = 'red-chat-avatar'; avatar.setAttribute('aria-hidden', 'true'); avatar.textContent = message.role === 'user' ? 'You' : speaker?.mark || '☾'; body.className = 'red-bubble-body';
+                author.textContent = message.role === 'user' ? 'You' : speaker?.name || 'Chuyue'; text.textContent = message.content;
                 body.append(author, text); bubble.append(avatar, body); log.append(bubble);
             }
-            if (director.discussion?.chatTask) { const thinking = doc.createElement('p'); thinking.className = 'red-thinking'; thinking.textContent = `${persona.name}正在思考…`; log.append(thinking); }
+            if (director.discussion?.chatTask) { const thinking = doc.createElement('p'); thinking.className = 'red-thinking'; thinking.textContent = `${persona.name} is thinking…`; log.append(thinking); }
             log.scrollTop = log.scrollHeight;
         }
         const guideStatus = get('guide-status'); guideStatus.replaceChildren();
         if (disc?.guide) {
             const text = doc.createElement('span');
-            text.textContent = director.discussion?.guideTask ? '正在准备本次方向…' : (disc.guide.pool.length ? '等待下一次事件 · 仅生效一次' : '本次方向尚未准备好');
-            const cancel = doc.createElement('button'); cancel.type = 'button'; cancel.dataset.window = 'cancel-guide'; cancel.textContent = '取消方向'; cancel.disabled = director.busy;
+            text.textContent = director.discussion?.guideTask ? 'Preparing this direction…' : (disc.guide.pool.length ? 'Waiting for the next event · applies once' : 'This direction is not ready yet');
+            const cancel = doc.createElement('button'); cancel.type = 'button'; cancel.dataset.window = 'cancel-guide'; cancel.textContent = 'Cancel direction'; cancel.disabled = director.busy;
             guideStatus.append(text, cancel);
             const summary = doc.createElement('p'); summary.textContent = disc.guide.summary; guideStatus.append(summary);
-            if (!disc.guide.pool.length && !director.discussion?.guideTask) { const retry = doc.createElement('button'); retry.type = 'button'; retry.dataset.window = 'retry-guide'; retry.textContent = '重新准备'; guideStatus.append(retry); }
-            if (state.pendingEvent?.cycleKey && state.pendingEvent.guideId !== disc.guide.id) { const hint = doc.createElement('small'); hint.textContent = '当前已准备的回合保留原安排；本方向用于下一次新事件。'; guideStatus.append(hint); }
-            if (!state.enabled) { const hint = doc.createElement('small'); hint.textContent = '请在设置中开启本聊天的随机事件导演。'; guideStatus.append(hint); }
-        } else guideStatus.textContent = disc?.lastUsed ? '上次方向已使用并清空 · 新事件按普通设置生成' : (disc?.proposal ? '总结尚未应用' : '自由讨论 · 当前没有待用方向');
+            if (!disc.guide.pool.length && !director.discussion?.guideTask) { const retry = doc.createElement('button'); retry.type = 'button'; retry.dataset.window = 'retry-guide'; retry.textContent = 'Prepare again'; guideStatus.append(retry); }
+            if (state.pendingEvent?.cycleKey && state.pendingEvent.guideId !== disc.guide.id) { const hint = doc.createElement('small'); hint.textContent = 'The round already prepared keeps its arrangement; this direction is for the next new event.'; guideStatus.append(hint); }
+            if (!state.enabled) { const hint = doc.createElement('small'); hint.textContent = 'Turn on Random Event Director for this chat in settings.'; guideStatus.append(hint); }
+        } else guideStatus.textContent = disc?.lastUsed ? 'The last direction was used and cleared · new events follow the regular settings' : (disc?.proposal ? 'Summary not applied yet' : 'Free discussion · no pending direction');
         get('proposal').hidden = !disc?.proposal; get('summary').textContent = disc?.proposal?.summary || '';
         button('accept').disabled = director.busy;
         const running = Boolean(director.discussion?.chatTask);
@@ -174,37 +176,37 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
         mini('enabled').checked = Boolean(state?.enabled); mini('enabled').disabled = !state;
         const diceMode = state?.diceMode || 'pool';
         mini('dice-mode').dataset.mode = diceMode;
-        mini('dice-mode').setAttribute('aria-label', `切换投掷方式，当前${diceMode === 'instant' ? '即时投掷' : '常规投掷'}`);
+        mini('dice-mode').setAttribute('aria-label', `Switch roll mode, currently ${diceMode === 'instant' ? 'Instant roll' : 'Regular roll'}`);
         mini('dice-mode').disabled = !state || director.busy || Boolean(director.fill || director.discussion?.guideTask || state.majorEvent);
         get('event-count').textContent = state ? `${state.eventPool.length} / ${state.targetCount}` : '—';
-        get('event-trigger-label').textContent = state?.diceMode === 'instant' ? '即时情境' : state?.fixedRoundEnabled ? '固定回合触发' : '触发概率';
-        get('event-probability').textContent = state ? (state.diceMode === 'instant' ? '手动 · 一次' : state.fixedRoundEnabled ? `每 ${state.fixedRoundInterval} 回合` : `${state.triggerProbability}%`) : '—';
+        get('event-trigger-label').textContent = state?.diceMode === 'instant' ? 'Instant situation' : state?.fixedRoundEnabled ? 'Fixed-round trigger' : 'Trigger probability';
+        get('event-probability').textContent = state ? (state.diceMode === 'instant' ? 'Manual · once' : state.fixedRoundEnabled ? `Every ${state.fixedRoundInterval} rounds` : `${state.triggerProbability}%`) : '—';
         const actionRunning = Boolean(eventTask), rolling = diceAnimating || (eventTask?.owner === currentOwner && eventTask?.action === 'roll');
         const preparing = Boolean(director.fill || director.discussion?.guideTask);
         const failure = state?.refillStopped ? state.generationFailure : null;
         const failed = Boolean(failure && !preparing && !actionRunning);
-        get('event-label').textContent = pending ? (pending.instant ? '即时情境 · 等待本轮生成' : '已抽取 · 等待本轮生成') : (preparing || actionRunning ? '初月正在准备事件' : '下一次意外，尚未揭晓');
-        get('event-title').textContent = pending?.title || (state ? '让故事多一点可能' : '请先打开一个聊天');
-        get('event-hint').textContent = pending ? (pending.instant ? '即时情境事件已准备。下一次主聊天使用一次；临时候选池已丢弃，普通池保留。' : state.majorEvent && pending.id === state.majorEvent.id
-            ? `重大事件已准备，首次成功回复后开始计时，持续 ${state.majorEvent.duration} 回合。`
-            : '事件已准备，将在对应的正常生成中生效；成功回复后结束本次注入。') : '保持自然的随机触发，或亲手掷骰，迎接一个小变化。';
+        get('event-label').textContent = pending ? (pending.instant ? 'Instant situation · waiting for this round\'s generation' : 'Drawn · waiting for this round\'s generation') : (preparing || actionRunning ? 'Chuyue is preparing an event' : 'The next surprise, not revealed yet');
+        get('event-title').textContent = pending?.title || (state ? 'Give the story a few more possibilities' : 'Open a chat first');
+        get('event-hint').textContent = pending ? (pending.instant ? 'Instant situation event ready. Used once in the next main chat; the temporary pool was discarded and the regular pool kept.' : state.majorEvent && pending.id === state.majorEvent.id
+            ? `Major event ready; timing starts after the first successful reply and lasts ${state.majorEvent.duration} rounds.`
+            : 'Event ready; takes effect in the corresponding normal generation, and this injection ends after a successful reply.') : 'Keep natural random triggers, or roll the die yourself for a small change.';
         get('event-reveal').hidden = !pending; get('event-content').textContent = pending?.content || '';
-        get('event-recent').textContent = state?.recentEvent?.title || '暂无';
+        get('event-recent').textContent = state?.recentEvent?.title || 'None yet';
         window.querySelector('.red-event-footnote').textContent = state?.diceMode === 'instant'
-            ? '即时情境只生成当前活动相关的候选，随机抽取一次后丢弃临时池。每次投掷额外调用副 AI；不自动抽取，不启动持续推进。'
-            : '骰子打开操作小窗；勾选开启后，点击框内投掷按钮抽取事件。继续主聊天时生效，不会自动发送消息。';
-        const stoppedNotice = state?.refillStopped && !preparing && !actionRunning ? '事件生成已暂停；请使用准备按钮或骰子小窗中的“重试生成”。' : '';
-        get('event-notice').textContent = state?.error || eventNotice || stoppedNotice || (!state?.enabled && state ? '已暂停；在骰子小窗或上方勾选“开启随机事件”后继续。' : '');
+            ? 'Instant situation only generates candidates related to the current activity, draws once at random, then discards the temporary pool. Each roll calls the secondary AI once more; no automatic draws and no continuous progression.'
+            : 'The die opens the action window; once enabled, click the roll button inside it to draw an event. It takes effect when you continue the main chat and never sends a message by itself.';
+        const stoppedNotice = state?.refillStopped && !preparing && !actionRunning ? 'Event generation is paused; use the prepare button or "Retry generation" in the dice window.' : '';
+        get('event-notice').textContent = state?.error || eventNotice || stoppedNotice || (!state?.enabled && state ? 'Paused; tick "Turn on random events" in the dice window or above to continue.' : '');
         get('pool-notice').textContent = state?.error || eventNotice || stoppedNotice || '';
         // The die always remains draggable and can reopen the current event, even while a request is busy.
         button('roll').disabled = false; floatingDie.disabled = false;
         button('prepare-pool').disabled = !state?.enabled || director.busy || preparing || actionRunning;
         button('reroll').disabled = !state || director.busy || (preparing && !(state.majorEvent && !state.majorEvent.started && !director.discussion?.guideTask)) || actionRunning;
         button('regenerate-pool').disabled = !state?.enabled || director.busy || preparing || actionRunning;
-        get('dice-label').textContent = '打开骰子小窗';
+        get('dice-label').textContent = 'Open dice window';
         button('roll').classList.toggle('red-is-rolling', rolling); floatingDie.classList.toggle('red-is-rolling', rolling);
         floatingDie.classList.toggle('red-die-ready', Boolean(pending));
-        const diceTitle = '打开骰子小窗，查看事件或选择投掷；不会自动投掷';
+        const diceTitle = 'Open the dice window to view events or choose a roll; it does not roll automatically';
         floatingDie.title = diceTitle; button('roll').title = diceTitle;
         floatingDie.setAttribute('aria-busy', String(actionRunning || preparing)); button('roll').setAttribute('aria-busy', String(actionRunning || preparing));
         diceDock.hidden = Boolean(director.settingsState()?.hideDice);
@@ -212,27 +214,27 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
         diceDock.classList.toggle('red-major-active', Boolean(major));
         for (const card of [window.querySelector('[data-major-card]'), diceDock.querySelector('[data-major-card]')]) {
             card.hidden = !major;
-            card.querySelector('small').textContent = '重大事件';
+            card.querySelector('small').textContent = 'Major event';
             card.querySelector('[data-major-role="title"]').textContent = major?.event.title || '';
             card.querySelector('[data-major-role="turns"]').textContent = major
-                ? `${state.enabled ? '' : '已暂停 · '}剩余 ${major.remaining} / ${major.duration} 回合${major.started ? (major.remaining === 1 ? ' · 本轮收尾' : '') : ' · 等待首次生效'}` : '';
+                ? `${state.enabled ? '' : 'Paused · '}${major.remaining} / ${major.duration} rounds left${major.started ? (major.remaining === 1 ? ' · closing this round' : '') : ' · waiting to take effect'}` : '';
             card.querySelector('button').disabled = !major || director.busy || actionRunning;
-            card.querySelector('button').textContent = '结束重大事件';
+            card.querySelector('button').textContent = 'End major event';
         }
-        diceFeedback.textContent = failed ? '生成失败' : (preparing || actionRunning ? '准备中…' : (pending ? '本轮已启用' : eventNotice));
-        mini('label').textContent = failed ? '生成失败 · 已暂停' : get('event-label').textContent;
-        mini('title').textContent = failed ? '事件未生成成功' : (preparing || actionRunning ? '正在准备事件…' : (pending?.title || (state ? '本轮暂无事件' : '请先打开一个聊天')));
-        mini('hint').textContent = !state?.enabled ? '已暂停。勾选上方开关后才会继续随机事件；主聊天可以正常使用。' : failed ? `原因：${failure.message}` : (preparing || actionRunning ? (director.fill?.kind === 'instant' ? '正在读取当前情境，生成临时候选并抽取一次…' : '准备完成后会在这里显示抽取结果。') : (pending ? get('event-hint').textContent : (director.busy ? '主 AI 正在生成，请稍后再投掷。' : state?.diceMode === 'instant' ? '每次投掷重新读取当前情境，临时生成并抽取一次。战斗只围绕战斗，约会只围绕约会；不会保存池子。' : '点击下方按钮抽取，继续主聊天时生效。')));
+        diceFeedback.textContent = failed ? 'Generation failed' : (preparing || actionRunning ? 'Preparing…' : (pending ? 'Enabled this round' : eventNotice));
+        mini('label').textContent = failed ? 'Generation failed · paused' : get('event-label').textContent;
+        mini('title').textContent = failed ? 'Event not generated' : (preparing || actionRunning ? 'Preparing event…' : (pending?.title || (state ? 'No event this round' : 'Open a chat first')));
+        mini('hint').textContent = !state?.enabled ? 'Paused. Random events continue only after ticking the switch above; the main chat works normally.' : failed ? `Reason: ${failure.message}` : (preparing || actionRunning ? (director.fill?.kind === 'instant' ? 'Reading the current situation, generating temporary candidates and drawing once…' : 'The draw result will show here when ready.') : (pending ? get('event-hint').textContent : (director.busy ? 'The main AI is generating; roll again shortly.' : state?.diceMode === 'instant' ? 'Every roll re-reads the current situation, generates temporarily and draws once. A fight stays on the fight, a date stays on the date; no pool is saved.' : 'Click the button below to draw; it takes effect when you continue the main chat.')));
         mini('reveal').hidden = !pending || failed || preparing || actionRunning; mini('content').textContent = pending?.content || '';
-        mini('notice').textContent = failed ? `已停止自动重试。${pending ? '原先已抽取的事件保留。' : ''}正常聊天可继续；要重新生成，请点击下方按钮。` : (preparing || actionRunning ? '' : (state?.error || eventNotice || stoppedNotice));
+        mini('notice').textContent = failed ? `Automatic retry stopped. ${pending ? 'Events already drawn are kept.' : ''}Normal chat can continue; to generate again, click the button below.` : (preparing || actionRunning ? '' : (state?.error || eventNotice || stoppedNotice));
         mini('failure-actions').hidden = !failure;
         const retry = eventWindow.querySelector('[data-mini-action="retry"]');
         retry.disabled = !state?.enabled || director.busy || preparing || actionRunning;
         const rollMini = eventWindow.querySelector('[data-mini-action="roll"]');
-        rollMini.textContent = '点击投掷';
+        rollMini.textContent = 'Click to roll';
         rollMini.disabled = !state?.enabled || (pending ? button('reroll').disabled
             : director.busy || preparing || actionRunning || Boolean(failure));
-        retry.textContent = preparing || actionRunning ? '正在重试…' : '重试生成';
+        retry.textContent = preparing || actionRunning ? 'Retrying…' : 'Retry generation';
         if (!failure) shownFailureId = null;
         const showFailure = failed && shownFailureId !== failure.id;
         if (showFailure) { shownFailureId = failure.id; eventWindow.hidden = false; }
@@ -253,7 +255,7 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
             diceTimer = doc.defaultView.setTimeout(() => { diceTimer = null; diceAnimating = false; if (!disposed) refresh(); }, 650);
         }
         try {
-            eventNotice = action === 'roll' ? '正在投掷并准备事件…' : '正在更新事件池…';
+            eventNotice = action === 'roll' ? 'Rolling and preparing an event…' : 'Updating event pool…';
             const task = action === 'end-major' ? director.endMajor() : action === 'retry' ? director.retryGeneration()
                 : action === 'reroll' ? director.reroll()
                     : action === 'regenerate-pool' ? director.regeneratePool()
@@ -262,10 +264,10 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
             if (disposed || director.state()?.owner !== currentOwner) return;
             refresh();
                 const current = director.state();
-                eventNotice = action === 'end-major' && done ? '当前事件线已结束，恢复普通事件池。' : done ? (!['prepare-pool', 'regenerate-pool'].includes(action)
-                    ? '本轮事件已启用，继续主聊天即可。' : '事件池已更新，等待故事的下一幕。')
+                eventNotice = action === 'end-major' && done ? 'The current event line has ended; back to the regular event pool.' : done ? (!['prepare-pool', 'regenerate-pool'].includes(action)
+                    ? 'This round\'s event is enabled; just continue the main chat.' : 'Event pool updated, waiting for the story\'s next scene.')
                     : current?.poolGenerated && !current.eventPool.length && !current.discussion.guide && !current.refillStopped
-                        ? '事件池已用完，请等待更新回合，或手动更新事件池。' : '本次未启用新事件，请检查连接或稍后重试。';
+                        ? 'The event pool is used up; wait for the refresh round, or refresh it by hand.' : 'No new event enabled this time; check the connection or try again later.';
         } catch (e) { if (!disposed && director.state()?.owner === currentOwner) eventNotice = e.message; }
         finally { if (eventTask === token) eventTask = null; if (Date.now() >= animationUntil) diceAnimating = false; if (!disposed) refresh(); }
     }
@@ -288,7 +290,7 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
             else if (action === 'maximize') {
                 window.classList.toggle('red-maximized'); const maximized = window.classList.contains('red-maximized');
                 for (const property of ['width', 'height']) window.style.removeProperty(property);
-                target.setAttribute('aria-label', maximized ? '还原窗口' : '放大窗口');
+                target.setAttribute('aria-label', maximized ? 'Restore window' : 'Maximize window');
                 for (const item of window.querySelectorAll('[data-size]')) item.setAttribute('aria-pressed', String(!maximized && item.dataset.size === window.dataset.size));
             }
             else if (action === 'send') { void send(); return; }
@@ -342,7 +344,7 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
     const miniChange = event => {
         if (event.target !== mini('enabled')) return;
         try {
-            director.update({ enabled: event.target.checked }); eventNotice = event.target.checked ? '' : '随机事件已暂停';
+            director.update({ enabled: event.target.checked }); eventNotice = event.target.checked ? '' : 'Random events paused';
         }
         catch (e) { eventNotice = e.message; }
         refresh();
@@ -357,7 +359,7 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
     doc.defaultView.visualViewport?.addEventListener('resize', reflow);
     doc.defaultView.visualViewport?.addEventListener('scroll', reflow);
     const menuButton = doc.createElement('button'); menuButton.id = 'red_director_menu'; menuButton.type = 'button'; menuButton.className = 'list-group-item flex-container flexGap5';
-    menuButton.innerHTML = '<i class="fa-solid fa-moon extensionsMenuExtensionButton" aria-hidden="true"></i><span>导演系统-初月</span>';
+    menuButton.innerHTML = '<i class="fa-solid fa-moon extensionsMenuExtensionButton" aria-hidden="true"></i><span>Director System - Chuyue</span>';
     const fromMenu = () => open('chat'); menuButton.addEventListener('click', fromMenu);
     function mountMenu() { const menu = doc.querySelector('#extensionsMenu'); if (menu && !menuButton.isConnected) menu.append(menuButton); }
     mountMenu();

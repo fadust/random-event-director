@@ -21,7 +21,7 @@ export const BUILTIN_HEADER_TEXT = `身份：
 来吧，把文本给我。
 让我看看……下一幕，能玩出多少种花样~`;
 export function builtinHeaderReference() {
-    return { id: 'builtin:chuyue', name: '初月 · 导演头部', builtinHeader: 'chuyue', messages: [], generation: {} };
+    return { id: 'builtin:chuyue', name: 'Chuyue · Director header', builtinHeader: 'chuyue', messages: [], generation: {} };
 }
 const ROLES = new Set(['system', 'user', 'assistant']);
 export function normalizeGeneration(raw = {}) {
@@ -30,40 +30,40 @@ export function normalizeGeneration(raw = {}) {
     for (const [key, [min, max]] of Object.entries(limits)) {
         if (raw[key] === undefined || raw[key] === '') continue;
         const value = Number(raw[key]);
-        if (!Number.isFinite(value) || value < min || value > max) throw new Error(`${key} 须在 ${min}～${max} 之间`);
-        if (['max_tokens', 'top_k'].includes(key) && !Number.isInteger(value)) throw new Error(`${key} 须为整数`);
+        if (!Number.isFinite(value) || value < min || value > max) throw new Error(`${key} must be between ${min} and ${max}`);
+        if (['max_tokens', 'top_k'].includes(key) && !Number.isInteger(value)) throw new Error(`${key} must be a whole number`);
         result[key] = value;
     }
     return result;
 }
 export function normalizeHeader(raw) {
     if (raw?.builtinHeader !== undefined) {
-        if (raw.builtinHeader !== 'chuyue') throw new Error('这个初月头部版本不可用');
+        if (raw.builtinHeader !== 'chuyue') throw new Error('This Chuyue header version is unavailable');
         return builtinHeaderReference();
     }
     if (raw?.nativePresetName !== undefined) return nativeHeaderReference(raw.nativePresetName);
     if (!raw || typeof raw !== 'object' || typeof raw.name !== 'string' || !raw.name.trim() || raw.name.length > 80
-        || !Array.isArray(raw.messages) || !raw.messages.length || raw.messages.length > 80) throw new Error('头部预设需要名称和提示词内容');
+        || !Array.isArray(raw.messages) || !raw.messages.length || raw.messages.length > 80) throw new Error('A header preset needs a name and prompt content');
     let size = 0;
     const messages = raw.messages.map(m => {
-        if (!ROLES.has(m?.role) || typeof m.content !== 'string' || !m.content.trim()) throw new Error('头部预设的文本或角色格式错误');
+        if (!ROLES.has(m?.role) || typeof m.content !== 'string' || !m.content.trim()) throw new Error('The header preset\'s text or role format is wrong');
         size += m.content.length;
         return { role: m.role, content: m.content.trim() };
     });
-    if (size > 20000) throw new Error('头部预设最多 20,000 字符');
+    if (size > 20000) throw new Error('Header presets are limited to 20,000 characters');
     return { id: typeof raw.id === 'string' ? raw.id.slice(0, 100) : '', name: raw.name.trim(), messages,
         generation: normalizeGeneration(raw.generation) };
 }
 export function activeHeader(raw) { try { return raw ? normalizeHeader(raw) : null; } catch { return null; } }
 export function nativeHeaderReference(name) {
-    if (typeof name !== 'string' || !name.trim() || name.length > 1000) throw new Error('请选择有效的酒馆预设');
+    if (typeof name !== 'string' || !name.trim() || name.length > 1000) throw new Error('Choose a valid SillyTavern preset');
     return { id: `native:${name}`, name, nativePresetName: name, messages: [], generation: {} };
 }
 export function nativePreset(header, ctx) {
     const name = header?.nativePresetName;
     if (!name) return null;
     const preset = ctx.getPresetManager?.('openai')?.getCompletionPresetByName?.(name);
-    if (!preset || typeof preset !== 'object') throw new Error(`酒馆预设不存在：${name}；请刷新列表并重新选择。`);
+    if (!preset || typeof preset !== 'object') throw new Error(`SillyTavern preset not found: ${name}; refresh the list and choose again.`);
     return preset;
 }
 function nativeMessages(raw, characterId) {
@@ -98,13 +98,13 @@ export function nativeGenerationPreset(preset) {
         !['chat_completion_source', 'model', 'reverse_proxy', 'api_server', 'custom_include_body', 'custom_exclude_body'].includes(key)
         && !/(_model|_url|_endpoint|_region|_password|_key|_headers)$/.test(key)));
 }
-export function headerFromNative(raw, name = '导入的头部预设', characterId = null) {
+export function headerFromNative(raw, name = 'Imported header preset', characterId = null) {
     if (raw?.type === 'random-event-director-header') {
-        if (raw.version !== 1) throw new Error('头部预设版本不支持');
+        if (raw.version !== 1) throw new Error('Header preset version not supported');
         return normalizeHeader(raw.preset);
     }
     if (Array.isArray(raw?.messages)) return normalizeHeader({ name, messages: raw.messages });
-    if (!Array.isArray(raw?.prompts)) throw new Error('请导入酒馆聊天补全预设或导演头部预设 JSON');
+    if (!Array.isArray(raw?.prompts)) throw new Error('Import a SillyTavern chat completion preset or a director header preset JSON');
     const orders = Array.isArray(raw.prompt_order) ? raw.prompt_order : [];
     const ordered = orders.find(p => characterId != null && String(p.character_id) === String(characterId))
         || orders.find(p => Number(p.character_id) === 100001) || orders.find(p => Number(p.character_id) === 100000) || orders[0];
@@ -113,7 +113,7 @@ export function headerFromNative(raw, name = '导入的头部预设', characterI
         : raw.prompts.filter(p => p.enabled !== false);
     const messages = prompts.filter(p => !p.marker && p.enabled !== false && typeof p.content === 'string' && p.content.trim())
         .map(p => ({ role: ROLES.has(p.role) ? p.role : 'system', content: p.content }));
-    if (!messages.length) throw new Error('这个预设没有可用的已启用文本提示词');
+    if (!messages.length) throw new Error('This preset has no usable enabled text prompts');
     const generation = normalizeGeneration({ ...raw, max_tokens: raw.max_tokens ?? raw.openai_max_tokens });
     return normalizeHeader({ name, messages, generation });
 }
@@ -129,25 +129,25 @@ export class HeaderLibrary {
     list() {
         const saved = this.storage()?.[HEADER_KEY];
         if (!saved) return [];
-        if (saved.version !== 1 || !Array.isArray(saved.presets)) throw new Error('头部预设库格式错误');
+        if (saved.version !== 1 || !Array.isArray(saved.presets)) throw new Error('Header preset library format error');
         return saved.presets.map(normalizeHeader);
     }
     save(raw, copy = false) {
         const p = normalizeHeader(raw), list = this.list();
         const index = copy ? -1 : list.findIndex(q => q.id === p.id);
-        if (index < 0) { if (list.length >= 30) throw new Error('最多保存 30 个头部预设'); p.id = this.makeId(); }
+        if (index < 0) { if (list.length >= 30) throw new Error('At most 30 header presets can be saved'); p.id = this.makeId(); }
         const used = new Set(list.filter(q => q.id !== p.id).map(q => q.name)), base = p.name.slice(0, 70); let n = 2;
         while (used.has(p.name)) p.name = `${base} (${n++})`;
         if (index < 0) list.push(p); else list[index] = p;
         this.write(list); return structuredClone(p);
     }
     write(presets) {
-        const target = this.storage(); if (!target) throw new Error('酒馆扩展设置不可用');
+        const target = this.storage(); if (!target) throw new Error('SillyTavern extension settings are unavailable');
         target[HEADER_KEY] = { version: 1, presets }; this.persist();
     }
     remove(id) { const list = this.list(); this.write(list.filter(p => p.id !== id)); }
     importJSON(source, name) {
-        if (typeof source !== 'string' || source.length > 1500000) throw new Error('头部预设文件不能超过 1.5 MB');
+        if (typeof source !== 'string' || source.length > 1500000) throw new Error('Header preset files cannot exceed 1.5 MB');
         return this.save(headerFromNative(JSON.parse(source), name), true);
     }
     exportJSON(p) { return JSON.stringify({ type: 'random-event-director-header', version: 1, preset: normalizeHeader(p) }, null, 2); }

@@ -2,16 +2,16 @@ import { UpdateChecker, ExtensionUpdater, CURRENT_VERSION } from './updates.js';
 
 export function mountUpdateUI(window, entry, context, doc) {
     const section = doc.createElement('section'); section.className = 'red-update-settings';
-    section.innerHTML = `<strong>版本与更新</strong><p>当前版本 v${CURRENT_VERSION}</p>
-        <label><input type="checkbox" data-update="auto"> 打开导演窗口时自动检查更新</label>
-        <p class="red-help">仅检查公开版本信息，不发送聊天或 API 配置。网络不可用时不影响使用。</p>
-        <div class="red-update-actions"><button type="button" data-update="check">检查更新</button><button type="button" data-update="install">更新</button></div>
-        <p data-update="status" role="status"></p><small>点击“更新”直接更新本扩展，成功后刷新页面生效。</small>`;
+    section.innerHTML = `<strong>Version and updates</strong><p>Current version v${CURRENT_VERSION}</p>
+        <label><input type="checkbox" data-update="auto"> Check for updates automatically when opening the director window</label>
+        <p class="red-help">Only checks public version information; no chat or API settings are sent. Works fine without a network.</p>
+        <div class="red-update-actions"><button type="button" data-update="check">Check for updates</button><button type="button" data-update="install">Update</button></div>
+        <p data-update="status" role="status"></p><small>Click "Update" to update this extension directly; reload the page afterwards for it to take effect.</small>`;
     window.querySelector('[data-page="settings"]').prepend(section);
     const banner = doc.createElement('div'); banner.className = 'red-update-banner'; banner.hidden = true;
-    banner.innerHTML = `<span data-update="message" role="status"></span><button type="button" data-update="install">更新</button><button type="button" data-update="dismiss" aria-label="暂时关闭更新提醒">×</button>`;
+    banner.innerHTML = `<span data-update="message" role="status"></span><button type="button" data-update="install">Update</button><button type="button" data-update="dismiss" aria-label="Dismiss update reminder for now">×</button>`;
     window.querySelector('.red-owner').before(banner);
-    const badge = doc.createElement('small'); badge.className = 'red-update-badge'; badge.hidden = true; badge.textContent = '有更新';
+    const badge = doc.createElement('small'); badge.className = 'red-update-badge'; badge.hidden = true; badge.textContent = 'Update available';
     entry.querySelector('b').append(badge);
     const settingsTab = window.querySelector('[data-view="settings"]');
     const automatic = section.querySelector('[data-update="auto"]'), check = section.querySelector('[data-update="check"]');
@@ -23,18 +23,18 @@ export function mountUpdateUI(window, entry, context, doc) {
         if (disposed) return;
         const s = checker.state;
         automatic.checked = checker.autoEnabled(); automatic.disabled = !context().extensionSettings;
-        check.disabled = s.checking || updater.state.updating || updater.state.done; check.textContent = s.checking ? '正在检查…' : '检查更新';
+        check.disabled = s.checking || updater.state.updating || updater.state.done; check.textContent = s.checking ? 'Checking…' : 'Check for updates';
         for (const button of installButtons) {
             button.disabled = updater.state.updating || s.checking;
-            button.textContent = updater.state.updating ? '正在更新…' : updater.state.done ? '刷新页面' : '更新';
+            button.textContent = updater.state.updating ? 'Updating…' : updater.state.done ? 'Reload page' : 'Update';
         }
         badge.hidden = !s.available; settingsTab.classList.toggle('red-has-update', s.available);
         banner.hidden = (!s.available && !updater.state.message) || dismissed === (s.latest || 'update');
-        banner.querySelector('[data-update="message"]').textContent = updater.state.message || (s.available ? `初月有新版本 v${s.latest}` : '');
-        section.querySelector('[data-update="status"]').textContent = updater.state.message || (s.checking ? '正在检查更新…'
-            : s.manualError ? '暂时无法检查更新，请稍后重试，或打开仓库查看。'
-                : s.available ? `发现新版本 v${s.latest}`
-                    : s.checked ? '当前版本已是最新。' : '');
+        banner.querySelector('[data-update="message"]').textContent = updater.state.message || (s.available ? `Chuyue has a new version v${s.latest}` : '');
+        section.querySelector('[data-update="status"]').textContent = updater.state.message || (s.checking ? 'Checking for updates…'
+            : s.manualError ? 'Cannot check for updates right now; try again later, or open the repository.'
+                : s.available ? `New version found v${s.latest}`
+                    : s.checked ? 'You are on the latest version.' : '');
     }
     const onAuto = () => checker.setAuto(automatic.checked);
     const onCheck = () => { dismissed = ''; updater.state.message = ''; void checker.check({ manual: true }); };

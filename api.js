@@ -10,7 +10,7 @@ function readCustomConfig(raw) {
     try { return JSON.parse(raw); }
     catch {
         const parser = globalThis.SillyTavern?.libs?.yaml;
-        if (!parser?.parse) throw new Error('酒馆缺少 YAML 解析接口，请更新酒馆或将自定义请求参数改为 JSON。');
+        if (!parser?.parse) throw new Error('SillyTavern lacks a YAML parsing API; update SillyTavern or write custom request parameters as JSON.');
         // Invalid YAML is also ignored by the host backend.
         try { return parser.parse(raw); } catch { return null; }
     }
@@ -45,10 +45,10 @@ function omitSampling(payload, enabled) {
 
 export async function requestModels(ctx, connection, signal, fetchImpl = globalThis.fetch) {
     const own = connectionConfig(connection);
-    if (own.mode !== 'independent') throw new Error('请先选择独立副 AI 连接');
+    if (own.mode !== 'independent') throw new Error('Choose an independent secondary AI connection first');
     const endpoint = apiBase(own.endpoint);
-    if (/\r|\n/.test(own.apiKey)) throw new Error('API 密钥不能包含换行');
-    if (!ctx.getRequestHeaders) throw new Error('此酒馆版本缺少请求服务，请更新 SillyTavern');
+    if (/\r|\n/.test(own.apiKey)) throw new Error('The API key cannot contain line breaks');
+    if (!ctx.getRequestHeaders) throw new Error('This SillyTavern version lacks the request service; update SillyTavern');
     const controller = new AbortController(), abort = () => controller.abort();
     signal?.throwIfAborted();
     signal?.addEventListener('abort', abort, { once: true });
@@ -71,9 +71,9 @@ export async function requestModels(ctx, connection, signal, fetchImpl = globalT
         return models;
     } catch (e) {
         signal?.throwIfAborted();
-        if (timedOut) throw new Error('拉取模型超时，请稍后重试；也可以手动填写模型 ID。');
-        if (e.message === 'empty') throw new Error('接口未返回可用模型，请手动填写模型 ID。');
-        throw new Error('拉取模型失败，请检查副 API 地址和密钥；接口需支持模型列表，也可以手动填写模型 ID。');
+        if (timedOut) throw new Error('Fetching models timed out; try again later, or enter the model ID by hand.');
+        if (e.message === 'empty') throw new Error('The endpoint returned no usable models; enter the model ID by hand.');
+        throw new Error('Failed to fetch models; check the secondary API URL and key. The endpoint must support a model list, or enter the model ID by hand.');
     } finally {
         clearTimeout(timer); signal?.removeEventListener('abort', abort);
     }
@@ -91,10 +91,10 @@ export async function requestPool(ctx, messages, settings, signal, connection = 
     nativePreset(settings.headerPreset, ctx);
     if (own.mode === 'independent') {
         const service = ctx.ChatCompletionService;
-        if (!service?.sendRequest) throw new Error('此酒馆版本缺少独立请求服务，请更新 SillyTavern');
+        if (!service?.sendRequest) throw new Error('This SillyTavern version lacks the independent request service; update SillyTavern');
         const endpoint = apiBase(own.endpoint);
-        if (!own.model) throw new Error('请填写副 AI 模型 ID');
-        if (/\r|\n/.test(own.apiKey)) throw new Error('API 密钥不能包含换行');
+        if (!own.model) throw new Error('Enter the secondary AI model ID');
+        if (/\r|\n/.test(own.apiKey)) throw new Error('The API key cannot contain line breaks');
         // Start with a fresh payload. Never inherit another connection's credentials, URL, body or headers.
         const payload = { chat_completion_source: 'custom', custom_url: endpoint,
             custom_include_headers: JSON.stringify({ Authorization: own.apiKey ? `Bearer ${own.apiKey}` : '' }),
@@ -102,17 +102,17 @@ export async function requestPool(ctx, messages, settings, signal, connection = 
         signal.throwIfAborted();
         try { return (await send(service, payload)).content; }
         catch (e) {
-            const message = String(e?.message || '副 AI 请求失败');
-            throw new Error(own.apiKey ? message.replaceAll(own.apiKey, '[已隐藏]') : message);
+            const message = String(e?.message || 'Secondary AI request failed');
+            throw new Error(own.apiKey ? message.replaceAll(own.apiKey, '[hidden]') : message);
         }
     }
-    if (ctx.onlineStatus === 'no_connection') throw new Error('请先连接酒馆 API');
-    if (!settings.useCurrentModel && !settings.model.trim()) throw new Error('请选择或填写副 AI 模型 ID');
+    if (ctx.onlineStatus === 'no_connection') throw new Error('Connect a SillyTavern API first');
+    if (!settings.useCurrentModel && !settings.model.trim()) throw new Error('Choose or enter a secondary AI model ID');
     const overrides = { stream: false, max_tokens: 2200, n: 1, temperature: 0.8 };
     if (!settings.useCurrentModel) overrides.model = settings.model.trim();
     if (ctx.mainApi === 'openai') {
         const service = ctx.ChatCompletionService;
-        if (!service?.presetToGeneratePayload || !service?.sendRequest) throw new Error('此酒馆版本缺少 ChatCompletionService；请更新标准 SillyTavern');
+        if (!service?.presetToGeneratePayload || !service?.sendRequest) throw new Error('This SillyTavern version lacks ChatCompletionService; update to standard SillyTavern');
         const payload = await service.presetToGeneratePayload({}, {}, { ...overrides, messages });
         signal.throwIfAborted();
         const result = await send(service, payload);
@@ -120,13 +120,13 @@ export async function requestPool(ctx, messages, settings, signal, connection = 
     }
     if (ctx.mainApi === 'textgenerationwebui') {
         const service = ctx.TextCompletionService;
-        if (!service?.presetToGeneratePayload || !service?.sendRequest) throw new Error('此酒馆版本缺少 TextCompletionService');
+        if (!service?.presetToGeneratePayload || !service?.sendRequest) throw new Error('This SillyTavern version lacks TextCompletionService');
         const prompt = messages.map(m => `${m.role.toUpperCase()}:\n${m.content}`).join('\n\n') + '\n\nASSISTANT:\n';
         const payload = await service.presetToGeneratePayload({}, {}, { ...overrides, prompt });
         signal.throwIfAborted();
         return (await send(service, payload)).content;
     }
-    throw new Error('V0.1 副 AI 支持酒馆 Chat Completion 和 Text Completion 连接；当前 API 暂不支持');
+    throw new Error('The V0.1 secondary AI supports SillyTavern Chat Completion and Text Completion connections; the current API is not supported yet');
 }
 export function completionPresets(ctx, api = ctx.mainApi) {
     const names = ctx.getPresetManager?.(api)?.getPresetList?.()?.preset_names;

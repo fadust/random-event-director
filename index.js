@@ -16,11 +16,11 @@ const PROMPT_KEY = 'random_event_director_one_turn';
 const INSTANCE_KEY = '__randomEventDirectorV1';
 
 export function install(host = globalThis.SillyTavern, doc = globalThis.document) {
-    if (!host?.getContext) throw new Error('随机事件导演需要标准 SillyTavern.getContext()');
+    if (!host?.getContext) throw new Error('Random Event Director needs the standard SillyTavern.getContext()');
     globalThis[INSTANCE_KEY]?.dispose();
     const context = () => host.getContext();
     const ctx = context(), bus = ctx.eventSource, events = ctx.eventTypes;
-    if (!bus?.on || !events?.GENERATION_STARTED || !ctx.setExtensionPrompt) throw new Error('酒馆缺少生成事件或隐藏提示词接口');
+    if (!bus?.on || !events?.GENERATION_STARTED || !ctx.setExtensionPrompt) throw new Error('SillyTavern lacks the generation event or hidden prompt API');
     let ui, requestTrace, injectionActive = false;
     const diagnostics = new Diagnostics(context);
     const presets = new PresetLibrary({ storage: () => context().extensionSettings,
@@ -32,22 +32,22 @@ export function install(host = globalThis.SillyTavern, doc = globalThis.document
     const director = new Director({ context, request: (ctx, messages, settings, signal) => {
         const config = connection.read();
         requestTrace?.markSecondary(signal);
-        director.trace('副 AI 连接', 'info', '使用当前副 AI 连接发送请求；请求内容和凭据不写入日志。', { connectionMode: config.mode }, undefined, '');
+        director.trace('Secondary AI connection', 'info', 'Sending the request with the current secondary AI connection; request content and credentials are not logged.', { connectionMode: config.mode }, undefined, '');
         return requestPool(ctx, messages, settings, signal, config);
     }, presets, headers, connection, diagnostics,
         inject: text => {
             const current = context(), wasActive = injectionActive;
             try { current.setExtensionPrompt(PROMPT_KEY, text, 1, 0, false, 0); }
-            catch (e) { director.trace(text ? '写入扩展提示词' : '清除扩展提示词', 'error', '酒馆的 setExtensionPrompt 接口抛出异常。'); throw e; }
+            catch (e) { director.trace(text ? 'Write extension prompt' : 'Clear extension prompt', 'error', 'SillyTavern\'s setExtensionPrompt API threw an exception.'); throw e; }
             injectionActive = Boolean(text);
             if (text || wasActive) {
                 try {
                     const store = current.extensionPrompts, readable = !!store && typeof store === 'object';
                     const matches = readable && store[PROMPT_KEY]?.value === text;
-                    director.trace(text ? '写入扩展提示词' : '清除扩展提示词', readable && !matches ? 'warn' : (readable ? 'success' : 'info'),
-                        text ? (readable ? (matches ? '酒馆扩展提示词中读回了本轮注入；还需检测最终请求。' : '调用接口后读回的内容不一致，可能被覆盖或宿主接口行为不同。') : '已调用酒馆注入接口，但此版本无法读取扩展提示词存储。')
-                            : '本轮临时提示词已执行清除。', { characters: text.length, storeReadable: readable, storeMatches: matches });
-                } catch { director.trace('注入存储检测', 'warn', '诊断无法读回扩展提示词；注入接口调用已完成，不改动生成流程。'); }
+                    director.trace(text ? 'Write extension prompt' : 'Clear extension prompt', readable && !matches ? 'warn' : (readable ? 'success' : 'info'),
+                        text ? (readable ? (matches ? 'Read this round\'s injection back from SillyTavern\'s extension prompt; the final request still needs checking.' : 'The content read back after the call differs; it may have been overwritten, or the host API behaves differently.') : 'Called SillyTavern\'s injection API, but this version cannot read the extension prompt store.')
+                            : 'This round\'s temporary prompt has been cleared.', { characters: text.length, storeReadable: readable, storeMatches: matches });
+                } catch { director.trace('Injection store check', 'warn', 'Diagnostics cannot read back the extension prompt; the injection call completed and the generation flow is unchanged.'); }
             }
         },
         persist: snapshot => snapshot.saveMetadata(), changed: () => ui?.refresh(),
@@ -75,7 +75,7 @@ export function install(host = globalThis.SillyTavern, doc = globalThis.document
                 if (['GENERATION_STOPPED', 'GENERATION_ENDED', 'MESSAGE_RECEIVED'].includes(name)) return;
             }
             try { const result = fn(...args); if (result?.catch) result.catch(e => director.fail(e)); }
-            catch (e) { director.trace('宿主事件异常', 'error', errorCategory(e)); director.clear(); director.fail(e); }
+            catch (e) { director.trace('Host event exception', 'error', errorCategory(e)); director.clear(); director.fail(e); }
         };
         bus.on(events[name], guarded); bindings.push([events[name], guarded]);
         if (late) outgoingBindings.push([events[name], guarded]);
@@ -85,13 +85,13 @@ export function install(host = globalThis.SillyTavern, doc = globalThis.document
         for (const [name, handler] of outgoingBindings) {
             if (finalOnly && name === events.GENERATE_AFTER_DATA) continue;
             try { bus.makeLast(name, handler); }
-            catch { director.trace('发送前监听顺序', 'warn', '宿主无法调整初月发送前处理的顺序，当前按原监听顺序执行。'); }
+            catch { director.trace('Pre-send listener order', 'warn', 'The host cannot reorder Chuyue\'s pre-send handling; running in the original listener order.'); }
         }
     }
     const interceptor = (_chat, _size, _abort, type) => {
         if (promptPreview.task) return;
         // Synchronous, bounded work only. Never wait for the secondary AI or abort the host.
-        try { director.intercept(type); } catch (e) { director.trace('注入异常', 'error', errorCategory(e)); director.clear(); director.fail(e); }
+        try { director.intercept(type); } catch (e) { director.trace('Injection exception', 'error', errorCategory(e)); director.clear(); director.fail(e); }
     };
     globalThis.randomEventDirectorInterceptor = interceptor;
     const refreshUI = () => { if (!ui) ui = mountUI(director, context, doc); ui?.refresh(); };
@@ -126,9 +126,9 @@ export function install(host = globalThis.SillyTavern, doc = globalThis.document
                 run.injected = true; if (director.diagnosticRun) director.diagnosticRun.injected = true;
                 director.requestChecked(check, true);
             }
-            director.trace(final ? '强制注入对象' : stage, check.found ? 'success' : 'warn',
-                check.found ? '强制模式已在此请求中检测到事件；不因后台类型、重生成或并发归属不明跳过。'
-                    : '此阶段没有检测到事件，继续等待传输层检查；没有新抽取事件。',
+            director.trace(final ? 'Force-injection target' : stage, check.found ? 'success' : 'warn',
+                check.found ? 'Force mode detected the event in this request; not skipping because of background type, regeneration or unclear concurrency ownership.'
+                    : 'No event detected at this stage; waiting for the transport-layer check. No new event drawn.',
                 { generationType: requestGenerationType(payload) || 'unknown', injectionTarget: Array.isArray(payload?.messages) ? 'system' : 'prompt-prefix',
                     forceInjection: true, changed: Boolean(changed), characters: current.injection.length });
             return;
@@ -138,16 +138,16 @@ export function install(host = globalThis.SillyTavern, doc = globalThis.document
         let cycle = state.cycles[run.cycleKey];
         if (type && (!['normal', 'regenerate', 'swipe', 'continue', 'append'].includes(type) || type !== run.type)) {
             if (!run.stopped && !run.completed) director.background(type);
-            if (final && cycle?.injection && stripOwnedInjection(payload, cycle.injection)) director.trace('后台请求隔离', 'success', '从明确属于后台的发送数据中移除了初月本轮注入；其他扩展内容与主回合存储保持原样。');
+            if (final && cycle?.injection && stripOwnedInjection(payload, cycle.injection)) director.trace('Background request isolation', 'success', 'Removed Chuyue\'s injection for this round from send data that clearly belongs to the background; other extensions\' content and the main round store are untouched.');
             return;
         }
         if (run.stopped || run.completed) return;
         if (run.ownershipUncertain) {
             if (final && cycle?.injection) stripOwnedInjection(payload, cycle.injection);
-            director.trace('请求归属检查', 'warn', '多个正文请求重叠，无法安全确定事件归属；不强制注入，不消费待用事件。'); return;
+            director.trace('Request ownership check', 'warn', 'Several text requests overlap and event ownership cannot be determined safely; not force-injecting and not consuming the pending event.'); return;
         }
         if (!type && run.overlapped) {
-            director.trace('请求归属检查', 'skip', '此请求没有足够的主回合归属信息，或生成类型不同；不将后台请求当作主回复检测。'); return;
+            director.trace('Request ownership check', 'skip', 'This request lacks enough main-round ownership information, or the generation type differs; the background request is not treated as the main reply.'); return;
         }
         if (!director.busy || !director.diagnosticRun?.eligible) return;
         if (final) director.requestChecked({ readable: false }, true);
@@ -156,7 +156,7 @@ export function install(host = globalThis.SillyTavern, doc = globalThis.document
         if (final && type === run.type && state.outgoingInjection && Array.isArray(payload.messages)) {
             if (!run.cycleKey) {
                 try { director.intercept(run.type); }
-                catch { director.trace('出站事件整理', 'warn', '原生注入接口异常，继续检查已经绑定的事件是否可以直接补写。'); }
+                catch { director.trace('Outgoing event tidy-up', 'warn', 'The native injection API threw an exception; checking whether the bound event can be written in directly.'); }
                 cycle = state.cycles[run.cycleKey];
             }
             if (director.run === run && !run.stopped && !run.completed && !run.ownershipUncertain && cycle?.event && cycle.injection
@@ -167,46 +167,46 @@ export function install(host = globalThis.SillyTavern, doc = globalThis.document
                 const verified = inspectPrompt(payload, cycle.injection, cycle.event.content);
                 if (verified.found) {
                     run.injected = true; director.diagnosticRun.injected = true;
-                    director.trace('出站事件整理', result.changed ? 'success' : 'info', result.changed
-                        ? (state.injectionMode === 'system' ? '已将本轮事件整理为一份独立系统消息并自检；不附着在聊天楼层中。'
-                            : result.reason === 'moved' ? '已将初月事件整理到玩家消息前部并自检；其他扩展内容保持原样。'
-                            : result.count > 1 ? '已合并初月事件的重复副本并自检；其他扩展内容保持原样。'
-                                : '发送前发现事件缺失，已从当前回合补回并自检；未重新抽取事件。')
-                        : '完整事件已在请求中；当前格式不适合移动，保留原位置，避免破坏预填或其他内容。',
+                    director.trace('Outgoing event tidy-up', result.changed ? 'success' : 'info', result.changed
+                        ? (state.injectionMode === 'system' ? 'Arranged this round\'s event as a single standalone system message and self-checked; not attached to chat messages.'
+                            : result.reason === 'moved' ? 'Arranged Chuyue\'s event at the front of the player message and self-checked; other extensions\' content untouched.'
+                            : result.count > 1 ? 'Merged duplicate copies of Chuyue\'s event and self-checked; other extensions\' content untouched.'
+                                : 'The event was missing before sending; restored from the current round and self-checked. No event was redrawn.')
+                        : 'The full event is already in the request; the current format is not suited to moving it, so it stays in place to avoid breaking prefill or other content.',
                         { count: result.count || 0, characters: cycle.injection.length, injectionMode: state.injectionMode });
-                } else director.trace('出站事件整理', 'warn', '无法确认完整事件已进入当前发送数据；保留事件，不将本次标记为已使用。');
+                } else director.trace('Outgoing event tidy-up', 'warn', 'Cannot confirm the full event entered the current send data; keeping the event, not marking it as used.');
             }
         }
         if (!run.injected || !cycle?.event) {
             director.trace(stage, director.diagnosticRun?.intercepted ? 'skip' : 'warn', director.diagnosticRun?.intercepted
-                ? '本轮没有事件注入，组装的请求无需包含事件。' : '已经组装主请求，但没有收到本插件的注入回调。'); return;
+                ? 'No event injected this round; the assembled request does not need to contain one.' : 'The main request was assembled, but this extension\'s injection callback was not received.'); return;
         }
         const check = inspectPrompt(payload, cycle.injection, cycle.event.content);
         director.requestChecked(check, final);
         if (director.diagnosticRun) director.diagnosticRun.observed = check.readable || director.diagnosticRun.observed;
         director.trace(stage, !check.readable ? 'warn' : (check.found ? 'success' : (check.eventFound || check.truncated ? 'warn' : 'error')),
-            !check.readable ? '此请求数据没有可读取的文本提示词，无法核对注入。'
-                : check.found ? '检测到完整事件注入。此检测不代表模型已收到或一定遵循该事件。'
-                    : check.truncated ? '请求过长，诊断只检测了部分文本；未检测到完整注入，无法判定丢失。'
-                    : check.eventFound ? '检测到事件内容，但完整注入模板不一致；提示词可能被改写。'
-                        : '已调用注入接口，但此阶段的主请求中没有检测到事件；请检查提示词组装、截断或其他扩展覆盖。',
+            !check.readable ? 'This request data has no readable text prompt; the injection cannot be verified.'
+                : check.found ? 'Full event injection detected. This check does not mean the model received or will follow the event.'
+                    : check.truncated ? 'The request is too long and diagnostics only checked part of the text; no full injection detected, but loss cannot be concluded.'
+                    : check.eventFound ? 'Event content detected, but the full injection template differs; the prompt may have been rewritten.'
+                        : 'The injection API was called, but no event was detected in the main request at this stage; check prompt assembly, truncation or other extensions overriding it.',
             { expectedCharacters: cycle.injection?.length || 0, scannedCharacters: check.scannedCharacters, eventFound: check.eventFound, truncated: check.truncated });
     }
     function observeSafely(payload, dryRun, stage, final = false) {
         try { observeRequest(payload, dryRun, stage, final); }
-        catch { director.trace(stage, 'warn', '此阶段的注入检查或整理出现异常；普通聊天继续，无法确认时保留待用事件。'); }
+        catch { director.trace(stage, 'warn', 'The injection check or tidy-up hit an exception at this stage; normal chat continues, and the pending event is kept when unconfirmed.'); }
     }
-    listen('GENERATE_AFTER_DATA', (data, dryRun) => { rearmOutgoing(true); observeSafely(data, dryRun, '主请求组装检测'); }, true);
+    listen('GENERATE_AFTER_DATA', (data, dryRun) => { rearmOutgoing(true); observeSafely(data, dryRun, 'Main request assembly check'); }, true);
     listen('CHAT_COMPLETION_SETTINGS_READY', data => {
-        observeSafely(data, false, 'Chat Completion 发送前检测', true);
+        observeSafely(data, false, 'Chat Completion pre-send check', true);
     }, true);
     listen('TEXT_COMPLETION_SETTINGS_READY', data => {
-        observeSafely(data, false, 'Text Completion 发送前检测', true);
+        observeSafely(data, false, 'Text Completion pre-send check', true);
     }, true);
-    diagnostics.record('插件加载', 'success', '导演系统已启动。记录实际请求、完整响应、注入对象和可识别的插件调用链；未知来源不作归因。不记录聊天正文、密钥、请求头或完整提示词。',
+    diagnostics.record('Extension loaded', 'success', 'Director system started. Records actual requests, full responses, injection targets and identifiable extension call chains; unknown sources are not attributed. Chat text, keys, request headers and full prompts are not recorded.',
         { assembledHook: !!events.GENERATE_AFTER_DATA, requestHook: !!events.CHAT_COMPLETION_SETTINGS_READY }, { owner: null });
-    if (!events.GENERATE_AFTER_DATA) diagnostics.record('宿主兼容性', 'warn', '酒馆没有提供主请求组装事件；部分注入检测不可用，不能据此判定注入失败。', {}, { owner: null });
-    if (!bus.makeLast) diagnostics.record('宿主兼容性', 'warn', '宿主没有监听顺序调整接口；发送前整理仍可运行，但无法确保排在后加载的扩展之后。', {}, { owner: null });
+    if (!events.GENERATE_AFTER_DATA) diagnostics.record('Host compatibility', 'warn', 'SillyTavern provides no main request assembly event; some injection checks are unavailable, so injection failure cannot be concluded from them.', {}, { owner: null });
+    if (!bus.makeLast) diagnostics.record('Host compatibility', 'warn', 'The host has no listener-order API; pre-send tidy-up still runs, but cannot be guaranteed to run after later-loaded extensions.', {}, { owner: null });
     rearmOutgoing();
     refreshUI();
     function dispose() {
@@ -226,5 +226,5 @@ export function install(host = globalThis.SillyTavern, doc = globalThis.document
 }
 
 if (globalThis.SillyTavern?.getContext && globalThis.document) {
-    try { install(); } catch (e) { console.error('[随机事件导演] 加载失败；普通聊天不受影响', e); }
+    try { install(); } catch (e) { console.error('[Random Event Director] Failed to load; normal chat is unaffected', e); }
 }

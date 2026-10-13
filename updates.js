@@ -1,16 +1,16 @@
 export const CURRENT_VERSION = '1.1.0';
 export const UPDATE_SETTINGS_KEY = 'random_event_director_updates_v1';
-export const REPOSITORY_URL = 'https://github.com/lucigra-Red/random-event-director';
+export const REPOSITORY_URL = 'https://github.com/fadust/random-event-director';
 const SOURCES = [
-    'https://raw.githubusercontent.com/lucigra-Red/random-event-director/main/manifest.json',
-    'https://cdn.jsdelivr.net/gh/lucigra-Red/random-event-director@main/manifest.json',
+    'https://raw.githubusercontent.com/fadust/random-event-director/main/manifest.json',
+    'https://cdn.jsdelivr.net/gh/fadust/random-event-director@main/manifest.json',
 ];
 
 async function installedExtension() {
     const folder = decodeURIComponent(new URL('.', import.meta.url).pathname.split('/').filter(Boolean).at(-1));
     const { extensionTypes } = await import('../../../extensions.js');
     const type = extensionTypes?.[`third-party/${folder}`];
-    if (!['local', 'global'].includes(type)) throw new Error('无法确定初月的安装位置，请在酒馆扩展管理中更新。');
+    if (!['local', 'global'].includes(type)) throw new Error('Cannot determine where Chuyue is installed; update it in SillyTavern\'s extension manager.');
     return { extensionName: folder, global: type === 'global' };
 }
 
@@ -23,7 +23,7 @@ export class ExtensionUpdater {
     update() {
         if (this.disposed || this.state.done) return Promise.resolve(false);
         if (this.task) return this.task;
-        this.state.updating = true; this.state.message = '正在更新初月，请稍候…'; this.changed();
+        this.state.updating = true; this.state.message = 'Updating Chuyue, please wait…'; this.changed();
         // Defer execution so a synchronous setup failure also clears the shared task.
         this.task = Promise.resolve().then(() => this.run());
         return this.task;
@@ -31,7 +31,7 @@ export class ExtensionUpdater {
     async run() {
         try {
             const ctx = this.context();
-            if (!ctx.getRequestHeaders) throw new Error('此酒馆版本不支持直接更新，请在扩展管理中更新。');
+            if (!ctx.getRequestHeaders) throw new Error('This SillyTavern version does not support direct updates; update in the extension manager.');
             const target = await this.installation();
             const response = await this.fetchFn('/api/extensions/update', {
                 method: 'POST', headers: ctx.getRequestHeaders(),
@@ -39,18 +39,18 @@ export class ExtensionUpdater {
             });
             if (!response.ok) {
                 const detail = (await response.text()).trim().slice(0, 500);
-                if (response.status === 409) throw new Error('本地扩展文件有修改，无法直接更新。请在扩展管理中处理后重试。');
-                if (response.status === 403) throw new Error('没有权限更新此扩展，请联系酒馆管理员。');
-                if (response.status === 404) throw new Error('没有找到已安装的初月，请在酒馆扩展管理中检查安装状态。');
-                throw new Error(`更新失败（HTTP ${response.status}）${detail ? `：${detail}` : '，请查看酒馆服务端日志。'}`);
+                if (response.status === 409) throw new Error('Local extension files have been modified, so it cannot update directly. Resolve this in the extension manager and retry.');
+                if (response.status === 403) throw new Error('No permission to update this extension; contact your SillyTavern administrator.');
+                if (response.status === 404) throw new Error('No installed Chuyue found; check the install state in SillyTavern\'s extension manager.');
+                throw new Error(`Update failed (HTTP ${response.status})${detail ? `: ${detail}` : '; check the SillyTavern server log.'}`);
             }
             const result = await response.json();
-            if (typeof result?.isUpToDate !== 'boolean') throw new Error('更新服务返回了无法识别的结果，请在扩展管理中确认更新状态。');
+            if (typeof result?.isUpToDate !== 'boolean') throw new Error('The update service returned an unrecognised result; confirm the update state in the extension manager.');
             this.state.done = true;
-            this.state.message = result.isUpToDate ? '本地扩展已是最新，请刷新页面载入。' : '初月已更新，刷新页面后生效。';
+            this.state.message = result.isUpToDate ? 'The local extension is already up to date; reload the page to load it.' : 'Chuyue has been updated; reload the page for it to take effect.';
             return true;
         } catch (error) {
-            this.state.message = error?.message || '更新失败，请检查网络连接或酒馆服务端日志。';
+            this.state.message = error?.message || 'Update failed; check the network connection or the SillyTavern server log.';
             return false;
         } finally {
             this.task = null; this.state.updating = false;
@@ -98,7 +98,7 @@ export class UpdateChecker {
         const controller = new AbortController(); this.controller = controller;
         let timer, cancel;
         const stopped = new Promise((_, reject) => {
-            cancel = () => reject(new Error('检查已停止'));
+            cancel = () => reject(new Error('Check stopped'));
             controller.signal.addEventListener('abort', cancel, { once: true });
             timer = setTimeout(() => controller.abort(), this.timeoutMs);
         });

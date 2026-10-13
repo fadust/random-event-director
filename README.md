@@ -1,104 +1,119 @@
-# 导演系统-初月 · 随机事件导演
+# Director System - Chuyue · Random Event Director (English)
 
-为 SillyTavern 聊天加入自然的偶发情境。也可以和初月讨论想要的剧情方向，确认后只影响一次随机事件。
+> **Unofficial English port.** This is a community translation of
+> [random-event-director (随机事件导演)](https://github.com/lucigra-Red/random-event-director) by **lucigra-Red and Random Event Director contributors**. All credit for the extension goes to the original author.
+> Only user-facing text (UI, toasts, logs, docs) was translated; behavior is unchanged.
+> The original Chinese README is kept as [README.zh-CN.md](README.zh-CN.md).
+>
+> The original is licensed under the MIT License; its license file is kept unchanged and applies to this port.
+>
+> **If you are the original author and want this port taken down or changed, open an issue here and it will be removed promptly.**
+>
+> Report translation problems here. Report bugs in the extension itself upstream.
 
-## 安装与更新
+> **Left as written.** Chuyue's built-in director header (her identity, personality, attitude and greeting) stays in Chinese. You can switch to a SillyTavern preset or no header in *Secondary AI header preset*. The bundled Chinese example `examples/旅馆日常.json` is kept; an English copy is in `examples/inn-daily.json`.
 
-1. 在酒馆打开 **扩展 → 安装扩展**，粘贴仓库地址：
+Adds natural chance situations to SillyTavern chats. You can also discuss the plot direction you want with Chuyue; once confirmed, it affects only one random event.
+
+## Install and update
+
+1. In SillyTavern open **Extensions → Install extension** and paste the repository URL:
 
    ```text
-   https://github.com/lucigra-Red/random-event-director
+   https://github.com/fadust/random-event-director
    ```
 
-2. 安装后刷新页面，在输入框旁的 **魔法棒菜单** 点击 **导演系统-初月**。
-3. 已安装的用户可在初月设置中点击 **更新**，成功后刷新页面；也可以从酒馆扩展管理中更新。手动安装用户沿用原方式更新，避免重复安装。
+2. Reload the page after installing, then click **Director System - Chuyue** in the **wand menu** next to the input box.
+3. Installed users can click **Update** in Chuyue's settings and reload afterwards, or update from SillyTavern's extension manager. Manual installs keep updating the same way, to avoid duplicate installs.
 
-也可以从 **扩展设置** 中点击 **打开导演系统** 或 **导演设置**。
+You can also click **Open director system** or **Director settings** in **Extension settings**.
 
-## 开始使用
+Do not install this alongside the original Chinese version.
 
-1. 在初月窗口进入 **设置**。未打开角色聊天时也可以先配置 API 和预设，保存为新聊天默认值。
-2. 展开 **副 AI 连接**，填写 OpenAI 兼容 API 地址、密钥和模型 ID，点击 **保存副 AI 配置**。也可以选择 **使用当前酒馆连接**。
-3. **副 AI 头部预设** 默认使用初月头部，也可改为酒馆预设或不使用头部。修改后点击 **应用头部预设**。
-4. 勾选 **开启本聊天的随机事件导演**，等待准备完成，或点击 **生成 / 重新生成事件池**。
-5. 正常和角色聊天，事件会按设置的概率出现。
+## Getting started
 
-想主动准备一次事件时，点击悬浮骰子或 **立即掷骰** 打开骰子小窗，勾选 **开启随机事件**，再点击 **点击投掷**。准备好后继续主聊天即可生效，投掷本身不会发送主聊天回复。骰子和事件小窗可以拖动；电脑端事件小窗可自由拖出屏幕边缘，再点击骰子即可找回。设置按用途分组，较长说明可按需展开。窗口顶部可选择大、中、小尺寸，手机上会适应屏幕大小。
+1. In Chuyue's window, go to **Settings**. Without a character chat open, you can still configure the API and presets and save them as defaults for new chats.
+2. Expand **Secondary AI connection**, enter an OpenAI-compatible API URL, key and model ID, and click **Save secondary AI settings**. You can also choose **Use the current SillyTavern connection**.
+3. **Secondary AI header preset** uses Chuyue's header by default; you can switch to a SillyTavern preset or no header. Click **Apply header preset** after changing it.
+4. Tick **Turn on Random Event Director for this chat** and wait for it to prepare, or click **Generate / regenerate event pool**.
+5. Chat with the character as usual; events appear at the probability you set.
 
-在 **随机事件** 页的 **准备 / 更新事件池** 下方点击 **重新投掷**，可以废弃待用事件，从剩余候选中再随机一个。在 **事件池** 页点击 **重新生成** 会废弃普通候选池并重新生成，已抽取的待用事件保留。候选用完时，重投不会提前补池。
+To prepare an event yourself, click the floating die or **Roll now** to open the dice window, tick **Turn on random events**, then click **Click to roll**. Once ready, continue the main chat for it to take effect; rolling itself never sends a main chat reply. The die and event window can be dragged; on desktop the event window can be dragged off the screen edge, and clicking the die brings it back. Settings are grouped by purpose, and longer explanations expand on demand. The top of the window offers large, medium and small sizes; on phones it adapts to the screen.
 
-每个聊天需要分别开启。副 AI 连接可共用；各聊天的预设选择、讨论记录和待用方向独立保存。
+On the **Random events** page, click **Reroll** under **Prepare / update event pool** to discard the pending event and draw another at random from the remaining candidates. On the **Event pool** page, **Regenerate** discards the regular candidate pool and generates a new one; drawn pending events are kept. When candidates run out, rerolling does not refill the pool early.
 
-### 即时投掷
+Each chat must be turned on separately. The secondary AI connection can be shared; each chat's preset choice, discussion history and pending direction are saved separately.
 
-骰子小窗右上角的叠卡按钮可切换 **常规投掷 / 即时投掷**。常规投掷从已准备的事件池抽取；即时投掷每次读取当前情境，临时生成一池相关候选，再随机选取一个，候选池随即丢弃。战斗围绕当前战斗，约会围绕当前约会，不另开无关支线。
+### Instant roll
 
-即时投掷复用你选择的导演预设，原有普通事件池保留；每次投掷额外调用副 AI。事件只用于下一次主聊天，不启动持续重大事件。
+The stacked-card button at the top right of the dice window switches between **Regular roll / Instant roll**. A regular roll draws from the prepared event pool; an instant roll reads the current situation each time, generates a temporary pool of related candidates, picks one at random, then discards the pool. A fight stays on the current fight, a date on the current date, with no unrelated side plots.
 
-### 剧情预设
+Instant roll reuses the director preset you chose, and the regular event pool is kept; each roll calls the secondary AI once more. The event is used only for the next main chat reply and never starts an ongoing major event.
 
-新增 **剧情 · 转折推进**：从当前目标、人物关系、线索和未解决的问题出发，增加机会、阻碍、发现和转折，减少无关日常。可在导演预设管理中选择并应用，也可继续使用自己的预设。
+### Plot preset
 
-### 中量预设与重大事件
+New: **Plot · Turns and progress**. Starting from current goals, relationships, clues and unresolved problems, it adds opportunities, obstacles, discoveries and turns, with fewer unrelated everyday events. Choose and apply it in director preset management, or keep using your own presets.
 
-在 **导演预设管理** 中选择 **中量 · 起伏剧情** 并应用：日常仍占多数，同时增加明确的好事、坏事和利弊混合的变化，偶尔出现重大机遇或危机。默认轻量预设保持原样。
+### Medium preset and major events
 
-抽到重大事件后，会立即准备相关事件池。骰子上方的小框持续显示事件名称、剩余回合和 **结束重大事件** 按钮；普通事件仍点击骰子查看。重大事件默认持续 5 个成功回复回合，可在高级设置调整。失败或同一回合重生成不重复计数，最后一回合尝试自然收尾，到期后恢复普通事件池，已发生的剧情事实保留。
+In **Director preset management**, choose **Medium · Ups and downs** and apply it: everyday events remain the majority, with more clear good news, bad news and mixed changes, and occasional major opportunities or crises. The default light preset is unchanged.
 
-重大事件首次生效前重投会取消它；生效后重投只换相关后续。手动结束可以提前退出持续引导。重大事件期间，手动或到期更新得到的仍是相关池；用完后不会提前自动补池。开始和结束重大事件各会额外准备一池候选。
+When a major event is drawn, a related event pool is prepared at once. A small box above the die keeps showing the event name, remaining rounds and an **End major event** button; regular events are still viewed by clicking the die. A major event lasts 5 successful reply rounds by default, adjustable in advanced settings. Failures and regenerations of the same round are not counted twice; the last round tries to close naturally, and afterwards the regular pool returns while story facts that happened are kept.
 
-## 和初月讨论
+Rerolling before a major event first takes effect cancels it; after it takes effect, rerolling only swaps the related follow-up. Ending it by hand exits the continuous guidance early. During a major event, manual or scheduled refreshes still produce a related pool; once used up, it does not refill early. Starting and ending a major event each prepare one extra pool of candidates.
 
-在 **剧情讨论** 页输入想法，或点击建议问题，让初月自己提出方向。AI 会回复，并给出一份方向总结。右上角可以选择初月、芙兰、泉此方或芙莉莲，改变小窗聊天的口吻。
+## Discussing with Chuyue
 
-- **应用到下一次事件**：确认这个方向，等待下一次随机事件。
-- **不应用**：放弃这份总结。
-- **直接继续输入**：自动放弃上一份未确认总结，继续讨论，不需要先点按钮。
+On the **Story discussion** page, type your ideas, or click a suggested question to let Chuyue propose directions. The AI replies and gives a direction summary. At the top right you can choose Chuyue, Flan, Konata Izumi or Frieren to change the side-window chat tone.
 
-确认的方向只影响一次事件。事件对应的主 AI 回复成功后，方向和临时候选自动清空，之后的新事件恢复普通设置。没有触发或生成失败时，方向会保留；也可以点击 **取消方向**。已准备的失败回合保留原安排，后来确认的新方向用于下一次新事件。重生成同一条回复仍保留该条原来的事件安排。
+- **Apply to the next event**: confirm this direction and wait for the next random event.
+- **Don't apply**: drop this summary.
+- **Just keep typing**: the previous unconfirmed summary is dropped automatically and the discussion continues; no need to click a button first.
 
-讨论不会加入主聊天。切换角色或聊天后，只显示对应聊天的记录与方向。**清空讨论记录** 不会取消已经确认的方向，需要取消时使用 **取消方向**。
+A confirmed direction affects only one event. Once the main AI reply for that event succeeds, the direction and temporary candidates clear automatically, and later events follow the regular settings again. If nothing triggers or generation fails, the direction is kept; you can also click **Cancel direction**. A prepared round that failed keeps its original arrangement, and a direction confirmed later is used for the next new event. Regenerating the same reply keeps that reply's original event arrangement.
 
-Enter 发送，Shift+Enter 换行；窗口支持拖动、放大和关闭。
+The discussion is never added to the main chat. After switching character or chat, only that chat's history and direction are shown. **Clear discussion** does not cancel a confirmed direction; use **Cancel direction** for that.
 
-## 预设
+Enter to send, Shift+Enter for a new line; the window can be dragged, maximized and closed.
 
-**副 AI 头部预设**：供事件生成与剧情讨论共同使用，提供三种选择：初月头部、酒馆预设、不使用头部。酒馆预设只复用已启用的提示词，不带入温度、采样或推理强度等参数。需要添加或编辑酒馆预设时，在酒馆中操作。
+## Presets
 
-**导演预设管理**：选择事件风格后点击 **应用到本聊天**。下方的 **添加自定义导演预设** 可以新建自己的预设。
+**Secondary AI header preset**: shared by event generation and story discussion, with three choices: Chuyue's header, a SillyTavern preset, or no header. A SillyTavern preset reuses only its enabled prompts, without temperature, sampling or reasoning-effort parameters. Add or edit SillyTavern presets in SillyTavern.
 
-- **副 AI 事件生成提示词**：写希望出现的事件风格，保留 `{{count}}`。
-- **主 AI 隐藏注入模板**：写事件如何融入剧情，保留 `{{event}}`。
-- **保存预设 / 另存为 / 导入与导出 JSON**：保存或分享自己的配置；导入后需要选择并应用。
+**Director preset management**: choose an event style and click **Apply to this chat**. **Add custom director preset** below creates your own.
 
-API 密钥不包含在导演预设导出中。
+- **Secondary AI event generation prompt**: describe the event style you want; keep `{{count}}`.
+- **Main AI hidden injection template**: describe how the event joins the story; keep `{{event}}`.
+- **Save preset / Save as / Import and export JSON**: save or share your configuration; after importing, choose and apply it.
 
-## 常用设置
+API keys are not included in director preset exports.
 
-| 设置 | 怎么用 |
+## Common settings
+
+| Setting | How to use it |
 |---|---|
-| 随机事件概率 | 默认 25%；调低减少事件，调高增加事件 |
-| 固定回合随机 | 勾选后代替概率触发，默认每 5 个新回合随机抽取一次，可自行设置；完整回复后计数，重生成与后台请求不重复计数 |
-| 重大事件持续回合 | 默认 5 个成功回复回合，可设置为 1～20；修改只影响之后抽取的重大事件 |
-| 近期消息数量 | 默认读取最近 16 条有效消息；一条用户消息和一条 AI 回复分别算一条，可按需改为 3 或 6 |
-| 读取隐藏楼层 | 勾选后，事件生成和小窗讨论也读取近期隐藏楼层 |
-| 提示词参考 | 准备事件池及方向候选前，模拟一次空发送，取得当前组装的世界书、记忆和剧情提示词；截取后终止主请求，再交给副 AI 生成事件。无需先发送聊天，不生成主 AI 回复，未发送草稿不参与。只读取文本，受字数上限限制；读取失败会暂停，支持聊天补全及文本补全。模拟期间其他扩展也可能运行 |
-| 事件注入方式 | 提供现有、独立系统消息、强制注入三种选择。强制模式将待用事件加入每个可识别的生成请求，包括后台和重试 |
-| 隐藏悬浮骰子 | 勾选后隐藏页面上的浮动骰子，仍可从导演窗口掷骰 |
-| 补充世界观 | 填写地点、关键世界书设定、禁忌和重要规则 |
-| 事件池更新 | 每批在 5 回合至设置上限间随机选择更新期限，上限最多 10 回合；到期前用完也不自动补池，可手动更新。到期时未用完也更新，已抽取的待用事件保留 |
-| 高级设置 | 事件池数量、更新间隔上限和超时，不熟悉时保留默认 |
+| Random event probability | 25% by default; lower for fewer events, higher for more |
+| Fixed-round random | When ticked, replaces probability triggering; by default draws once every 5 new rounds, adjustable. Counted after a full reply; regenerations and background requests are not counted twice |
+| Major event duration | 5 successful reply rounds by default, settable from 1 to 20; changes affect only major events drawn afterwards |
+| Recent messages | Reads the last 16 valid messages by default; a user message and an AI reply count as one each. Lower to 3 or 6 if you like |
+| Read hidden messages | When ticked, event generation and side-window discussion also read recent hidden messages |
+| Prompt reference | Before preparing the event pool and directed candidates, simulates one empty send to capture the currently assembled World Info, memory and story prompts, stops the main request after capture, then passes them to the secondary AI. No need to send a chat message first, no main AI reply is generated, and unsent drafts are not included. Text only, within the length cap; pauses if reading fails. Supports Chat Completion and Text Completion. Other extensions may also run during the simulation |
+| Event injection mode | Three choices: existing, standalone system message, force injection. Force mode adds the pending event to every identifiable generation request, including background and retries |
+| Hide floating die | When ticked, hides the floating die on the page; you can still roll from the director window |
+| Extra worldbuilding | Add locations, key World Info settings, no-gos and important rules |
+| Event pool refresh | Each batch picks a refresh deadline at random between 5 rounds and the limit, at most 10 rounds. If used up before then it is not refilled automatically; refresh by hand. At expiry unused candidates refresh too, and drawn pending events are kept |
+| Advanced settings | Event pool size, refresh limit and timeout; keep the defaults if unsure |
 
-生成事件和剧情讨论都会额外调用副 AI。**事件池** 页可检查完整候选内容，可能剧透。新聊天的事件池目标数量默认 10，已有聊天保留自己的设置。
+Generating events and story discussion both call the secondary AI. The **Event pool** page shows the full candidates and may spoil. New chats default to an event pool target of 10; existing chats keep their own setting.
 
-候选事件按权重随机抽取。**诊断日志** 会分别记录生成通知、实际请求和正文完成，并自动查询可识别的酒馆助手脚本。它能提供来源线索，不能只凭启用列表判定哪个插件有问题。日志不包含聊天正文或 API 密钥。
+Candidate events are drawn at random by weight. The **Diagnostic log** records generation notices, actual requests and text completion separately, and queries identifiable Tavern Helper scripts automatically. It gives leads on the source; the enabled list alone cannot prove which extension is at fault. The log never contains chat text or API keys.
 
-## 没有出现事件或回复？
+## No events or replies?
 
-- 检查副 AI 地址、密钥和模型 ID，确认已保存配置。
-- 检查当前聊天是否已开启导演，普通事件池是否已准备好。
-- 不是每轮都会触发；可点击 **立即掷骰**，再发送消息体验。
-- 方向准备失败时，在讨论页点击 **重新准备**；讨论请求卡住时可以点击 **停止**。
-- 事件生成失败会暂停，骰子小窗显示原因；点击 **重试生成** 后才重新请求。
-- 接口提示采样参数不支持时，可在 **副 AI 连接** 勾选 **排除温度与采样参数（兼容模式）**。
-- 主聊天仍需连接你平时使用的 AI。初月的独立副 AI 配置支持 OpenAI 兼容接口；复用酒馆连接时支持 Chat Completion 和 Text Completion。
+- Check the secondary AI URL, key and model ID, and confirm the settings are saved.
+- Check that the director is on for the current chat and the regular event pool is ready.
+- Not every round triggers; click **Roll now**, then send a message to try it.
+- If preparing a direction fails, click **Prepare again** on the discussion page; if a discussion request hangs, click **Stop**.
+- Event generation pauses on failure and the dice window shows the reason; it only requests again after you click **Retry generation**.
+- If the API rejects sampling parameters, tick **Exclude temperature and sampling parameters (compatibility mode)** in **Secondary AI connection**.
+- The main chat still needs your usual AI connection. Chuyue's separate secondary AI setup supports OpenAI-compatible APIs; reusing the SillyTavern connection supports Chat Completion and Text Completion.

@@ -20,7 +20,7 @@ export function callerEvidence(stack = '') {
         if (!frames.includes(location)) frames.push(location);
         if (frames.length >= 5) break;
     }
-    return { sourceEvidence: plugins.length ? 'stack' : 'unknown', sourcePlugins: plugins.join(', ') || '未知', sourceFrames: frames.join('; ') };
+    return { sourceEvidence: plugins.length ? 'stack' : 'unknown', sourcePlugins: plugins.join(', ') || 'Unknown', sourceFrames: frames.join('; ') };
 }
 
 export function forcePayload(payload, injection) {
@@ -49,8 +49,8 @@ function endpointType(url) {
     return null;
 }
 function safeModel(value) {
-    const text = typeof value === 'string' ? value.replace(/[\x00-\x1f\x7f]/g, ' ').slice(0, 120) : '未知';
-    return /bearer|sk-|[?&=]|https?:/i.test(text) ? '已隐藏异常模型字段' : text;
+    const text = typeof value === 'string' ? value.replace(/[\x00-\x1f\x7f]/g, ' ').slice(0, 120) : 'Unknown';
+    return /bearer|sk-|[?&=]|https?:/i.test(text) ? 'Abnormal model field hidden' : text;
 }
 
 // Observe the body's existing consumer. No clone, parallel reader, or unbounded SSE buffer.
@@ -148,9 +148,9 @@ export function installRequestTrace({ context, getEvent, record, helperTrace, on
         if (!disposed) { try { helper = helperTrace?.onEvent(name, args) || {}; } catch { /* Optional helper. */ } }
         if (!disposed && watched.has(name)) {
             const type = typeof args[0] === 'string' ? args[0] : args.find(value => typeof value === 'string');
-            log(previewing() ? '提示词参考模拟通知' : '生成通知来源', 'info', previewing()
-                ? '当前正在模拟空发送以读取提示词，不计为初月主回合；其他扩展也可能响应此通知。'
-                : '记录到酒馆生成通知；通知次数不等于实际 HTTP 请求次数。插件调用链仅为来源线索。',
+            log(previewing() ? 'Prompt reference simulation notice' : 'Generation notice source', 'info', previewing()
+                ? 'Simulating an empty send to read the prompt; not counted as a Chuyue main round. Other extensions may also respond to this notice.'
+                : 'SillyTavern generation notice recorded; the number of notices is not the number of actual HTTP requests. The extension call chain is only a lead on the source.',
                 { notificationNumber: ++notification, notificationType: watched.get(name),
                     generationType: requestGenerationType({ type: type || null }) || 'unknown', ...callerEvidence(new Error().stack), ...helper });
         }
@@ -181,11 +181,11 @@ export function installRequestTrace({ context, getEvent, record, helperTrace, on
             const signal = init?.signal ?? (isRequest ? input.signal : null);
             const blocked = blockRequest({ route, payload: previewPayload, secondary: signal && secondarySignals.has(signal) });
             if (blocked) {
-                log('提示词参考模拟终止', 'success', '模拟正文请求已在本地发送前终止，未转发到主 AI。', { endpointType: route });
+                log('Prompt reference simulation stopped', 'success', 'The simulated text request was stopped locally before sending; it was not forwarded to the main AI.', { endpointType: route });
                 throw blocked;
             }
         }
-        const started = now(), requestNumber = ++sequence, requestId = `请求 ${requestNumber}`;
+        const started = now(), requestNumber = ++sequence, requestId = `Request ${requestNumber}`;
         const stack = new Error().stack;
         const evidence = { ...callerEvidence(stack), ...helperEvidence(stack) };
         const snapshot = snapshotEvent();
@@ -214,7 +214,7 @@ export function installRequestTrace({ context, getEvent, record, helperTrace, on
                 const key = current.owner + ':' + hash, previous = fingerprints.get(key);
                 if (previous && started - previous.time < 60000) {
                     details.samePayloadAs = previous.id; details.samePayloadCount = previous.count + 1;
-                    log('重复发送线索', 'warn', '最近一分钟内相同生成内容再次发送。可能是重试或重新生成，不能仅凭此认定某个插件有问题。',
+                    log('Possible duplicate send', 'warn', 'The same generation content was sent again within the last minute. It may be a retry or regeneration; this alone does not prove an extension is at fault.',
                         { ...details }, current.owner);
                 }
                 fingerprints.set(key, { id: requestId, time: started, count: details.samePayloadCount || 1 });
@@ -228,41 +228,41 @@ export function installRequestTrace({ context, getEvent, record, helperTrace, on
                 if (details.eventPresent) transportEvent = current;
                 details.injectionTarget = Array.isArray(payload.messages) || Array.isArray(payload.prompt) ? 'system' : 'prompt-prefix';
                 nextArgs = [input, { ...(init || {}), body: JSON.stringify(payload) }];
-                log('实际请求强制注入', details.eventPresent ? 'success' : 'warn', details.eventPresent
-                    ? '已将当前聊天的待用事件放入此实际生成请求。调用链中的插件是来源候选，不等于干扰者。'
-                    : '请求格式或内容无法安全整理；不阻断请求，不虚报注入成功。', details, current.owner);
-            } else log('实际生成请求', 'info', sameChat ? '记录实际发送：当前没有待用事件或强制模式未开启。'
-                : '读取期间聊天或事件已切换，不把其他聊天的新事件加入此请求。', details, snapshot?.owner);
+                log('Force injection into actual request', details.eventPresent ? 'success' : 'warn', details.eventPresent
+                    ? 'Put the current chat\'s pending event into this actual generation request. Extensions in the call chain are source candidates, not culprits.'
+                    : 'The request format or content cannot be tidied safely; the request is not blocked and injection success is not falsely reported.', details, current.owner);
+            } else log('Actual generation request', 'info', sameChat ? 'Recorded the actual send: no pending event at present, or force mode is off.'
+                : 'The chat or event switched while reading; the other chat\'s new event is not added to this request.', details, snapshot?.owner);
         } catch {
-            log('实际请求检查', 'warn', '请求体格式不受支持，原样发送。未记录正文、URL、请求头或原始错误。', details, snapshot?.owner);
+            log('Actual request check', 'warn', 'Unsupported request body format; sent as is. Text, URL, headers and raw errors are not recorded.', details, snapshot?.owner);
         }
         active.add(requestId);
         const transport = phase => { try { onTransport(transportEvent, phase, details); } catch { /* Optional lifecycle observer. */ } };
         transport('start');
-        log('实际请求开始', 'info', '开始等待此请求的响应头；实际请求编号可与生成通知区分。', { ...details, activeRequests: active.size }, snapshot?.owner);
+        log('Actual request started', 'info', 'Started waiting for this request\'s response headers; actual request numbers can be told apart from generation notices.', { ...details, activeRequests: active.size }, snapshot?.owner);
         try {
             const response = await forward(nextArgs);
-            log('实际请求响应', response.ok ? 'success' : 'warn', '已收到响应头；这不等于流式正文完成，也不代表模型遵循事件。',
+            log('Actual request response', response.ok ? 'success' : 'warn', 'Response headers received; this does not mean the streamed text is complete, nor that the model followed the event.',
                 { ...details, httpStatus: response.status, durationMs: Math.max(0, now() - started), outcome: 'response' }, snapshot?.owner);
             if (!response.ok) { active.delete(requestId); transport('failed'); return response; }
             const bodyFinished = ok => {
                 active.delete(requestId);
                 if (disposed) return;
-                log('实际请求正文完成', ok ? 'success' : 'warn', ok ? '调用方已读取完整模型响应。正文完成与宿主通知分别记录。'
-                    : '未确认有效正文完整返回；取消、错误或未知格式不会消费待用事件。',
+                log('Actual request body complete', ok ? 'success' : 'warn', ok ? 'The caller has read the full model response. Body completion and host notices are recorded separately.'
+                    : 'Valid text not confirmed as fully returned; a cancel, error or unknown format does not consume the pending event.',
                     { ...details, durationMs: Math.max(0, now() - started), outcome: ok ? 'complete' : 'incomplete', activeRequests: active.size }, snapshot?.owner);
                 transport(ok ? 'complete' : 'failed');
             };
             try { return observeResponse(response, bodyFinished); }
             catch { bodyFinished(false); return response; }
         } catch (error) {
-            log('实际请求失败', 'error', '请求未获得正常响应；保留原异常交给调用方处理，日志不记录错误原文。',
+            log('Actual request failed', 'error', 'The request got no normal response; the original exception is passed to the caller and the log does not record the error text.',
                 { ...details, durationMs: Math.max(0, now() - started), outcome: error?.name === 'AbortError' ? 'aborted' : 'network-error' }, snapshot?.owner);
             active.delete(requestId); transport('failed'); throw error;
         }
     }
     if (typeof originalFetch === 'function') host.fetch = wrappedFetch;
-    else log('传输层诊断', 'warn', '当前环境没有可观察的 fetch，仍使用酒馆请求钩子，无法记录实际 HTTP 发送。', {});
+    else log('Transport-layer diagnostics', 'warn', 'No observable fetch in this environment; still using SillyTavern\'s request hooks, so actual HTTP sends cannot be recorded.', {});
     return { markSecondary(signal) { if (signal && typeof signal === 'object') secondarySignals.add(signal); }, dispose() {
         disposed = true;
         if (host.fetch === wrappedFetch) host.fetch = originalFetch;

@@ -9,9 +9,9 @@ export function connectionConfig(raw = {}) {
 }
 export function apiBase(raw) {
     let url;
-    try { url = new URL(raw); } catch { throw new Error('请填写完整的副 AI API 地址，例如 https://example.com/v1'); }
+    try { url = new URL(raw); } catch { throw new Error('Enter the full secondary AI API URL, e.g. https://example.com/v1'); }
     if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
-        throw new Error('API 地址须为 HTTP/HTTPS 地址；密钥请填写在密钥框中');
+        throw new Error('The API URL must be an HTTP/HTTPS address; put the key in the key field');
     }
     url.pathname = url.pathname.replace(/\/chat\/completions\/?$/, '').replace(/\/+$/, '');
     return url.toString().replace(/\/+$/, '');
@@ -21,9 +21,9 @@ export class ConnectionSettings {
     read() { return connectionConfig(this.storage()?.[CONNECTION_KEY]); }
     save(raw) {
         const target = this.storage();
-        if (!target) throw new Error('酒馆扩展设置不可用');
+        if (!target) throw new Error('SillyTavern extension settings are unavailable');
         const config = connectionConfig(raw);
-        if (/\r|\n/.test(config.apiKey)) throw new Error('API 密钥不能包含换行');
+        if (/\r|\n/.test(config.apiKey)) throw new Error('The API key cannot contain line breaks');
         target[CONNECTION_KEY] = config; this.persist(); return { ...config };
     }
 }

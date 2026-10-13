@@ -127,7 +127,7 @@ test('副 AI 请求失败安全返回', async () => {
 test('副 AI 超时有界，中止请求，不阻塞主生成', async () => {
     const f = fixture({ request: async () => new Promise(() => {}) }); f.state.timeoutSeconds = 5;
     const pending = f.d.refill(); f.d.start('normal'); f.d.intercept('normal'); reply(f);
-    assert.equal(await pending, false); assert.match(f.state.error, /超时/); assert.equal(f.d.fill, null);
+    assert.equal(await pending, false); assert.match(f.state.error, /timed out/); assert.equal(f.d.fill, null);
 });
 test('手动掷骰可先生成空池，不生成主聊天消息，下一轮使用', async () => {
     const f = fixture(); f.state.triggerProbability = 0;

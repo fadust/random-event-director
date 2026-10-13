@@ -1,0 +1,13 @@
+{
+  "type": "random-event-director-presets",
+  "version": 1,
+  "presets": [
+    {
+      "id": "example-hotel-daily",
+      "name": "Inn daily life",
+      "generatorPrompt": "Based on the recent story, generate {{count}} causes for everyday events at an inn. Prefer changes in the surroundings, light social moments, small mishaps of daily life and chance clues. Mostly mild, a few moderate; avoid back-to-back conflicts or disasters, do not decide outcomes, and do not act for the player.",
+      "injectionTemplate": "Weave the situation below naturally into the current scene, keeping a relaxed everyday mood:\n{{event}}\nIntroduce only the cause, and leave the outcome and room to respond to the interaction that follows.",
+      "completionPresetName": ""
+    }
+  ]
+}
