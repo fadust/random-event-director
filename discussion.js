@@ -3,6 +3,7 @@ import { headerMessages } from './headers.js';
 import { discussionState } from './discussion-state.js';
 import { isPersona, personaPrompt } from './personas.js';
 import { progressionFocus } from './progression.js';
+import { generationLimit } from './request-limits.js';
 
 export function parseDiscussion(text) {
     if (typeof text !== 'string' || text.length > 30000) throw new Error('讨论回复为空或过长');
@@ -31,17 +32,10 @@ export class Discussion {
         if (disc.guide) void this.prepareGuide({ manual: false });
     }
     async timed(task, ctx, messages, settings) {
-        let timer;
-        const cancelled = new Promise((_, reject) => {
-            task.cancel = () => reject(new Error('请求已停止'));
-            task.controller.signal.addEventListener('abort', task.cancel, { once: true });
-        });
+        const limit = generationLimit(settings, task.controller, '副 AI 超时，请重试', '请求已停止');
         try {
-            return await Promise.race([this.director.request(ctx, messages, settings, task.controller.signal), cancelled,
-                new Promise((_, reject) => { timer = setTimeout(() => {
-                    reject(new Error('副 AI 超时，请重试')); task.controller.abort();
-                }, settings.timeoutSeconds * 1000); })]);
-        } finally { clearTimeout(timer); task.controller.signal.removeEventListener('abort', task.cancel); }
+            return await Promise.race([this.director.request(ctx, messages, settings, task.controller.signal), limit.promise]);
+        } finally { limit.cleanup(); }
     }
     async send(text) {
         const d = this.director, ctx = d.context(), s = d.state(ctx);

@@ -1,6 +1,7 @@
 import { choose, parseEvents, poolPrompt } from './engine.js';
 import { loadStoryEntries, parseStoryIndex, parseStoryJSON, materialMessage, promptMaterialMessage, storyPromptKey, completedStory, isTimeIndex } from './story-worldbook.js';
 import { currentStoryTime } from './story-time.js';
+import { generationLimit } from './request-limits.js';
 
 export class StoryMode {
     constructor(director) { this.d = director; this.sources = new WeakMap(); }
@@ -58,15 +59,13 @@ export class StoryMode {
         const send = async (messages, maxOutputTokens) => {
             controller.signal.throwIfAborted();
             if (!this.current(ctx, s, epoch, controller.signal, indexOnly)) throw new Error('剧情准备已取消');
-            let timer, rejectCancelled;
-            const aborted = () => rejectCancelled(new Error('剧情准备已取消'));
+            const limit = generationLimit(s, controller, '副 AI 超时；可提高超时设置后重试', '剧情准备已取消');
             try {
                 return await Promise.race([
                     d.request(ctx, messages, { ...s, maxOutputTokens }, controller.signal),
-                    new Promise((_, reject) => { rejectCancelled = reject; controller.signal.addEventListener('abort', aborted, { once: true }); }),
-                    new Promise((_, reject) => { timer = setTimeout(() => { reject(new Error('副 AI 超时；可提高超时设置后重试')); controller.abort(); }, s.timeoutSeconds * 1000); }),
+                    limit.promise,
                 ]);
-            } finally { clearTimeout(timer); controller.signal.removeEventListener('abort', aborted); }
+            } finally { limit.cleanup(); }
         };
         try {
             const entries = await loadStoryEntries(ctx, controller.signal);

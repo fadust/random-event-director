@@ -1,7 +1,7 @@
 export const KEY = 'random_event_director_v1';
 export const DEFAULTS = Object.freeze({ enabled: false, triggerProbability: 25, fixedRoundEnabled: false, fixedRoundInterval: 5, targetCount: 10,
     refillThreshold: 2, expiryTurns: 10, majorEventTurns: 5, diceMode: 'pool', storyMode: false, storyManual: false, progressionMode: false, progressionCycles: 5, contextMessages: 16, contextChars: 24000, includeHiddenMessages: false, useMainPromptContext: false, hideDice: false,
-    timeoutSeconds: 45, useCurrentModel: true, outgoingInjection: true, injectionMode: 'user', forceInjection: false, model: '', worldNotes: '', directorPreset: null, headerPreset: Object.freeze(builtinHeaderReference()) });
+    timeoutSeconds: 45, unlimitedGenerationTime: true, useCurrentModel: true, outgoingInjection: true, injectionMode: 'user', forceInjection: false, model: '', worldNotes: '', directorPreset: null, headerPreset: Object.freeze(builtinHeaderReference()) });
 const REPLAY = new Set(['regenerate', 'swipe', 'continue', 'append']);
 const ALLOWED = new Set(['normal', 'regenerate', 'swipe', 'continue', 'append']);
 const clamp = (value, fallback, min, max) => Number.isFinite(Number(value))
@@ -23,6 +23,7 @@ export function config(raw = {}) {
         useMainPromptContext: raw.useMainPromptContext === true,
         hideDice: raw.hideDice === true,
         timeoutSeconds: clamp(raw.timeoutSeconds, 45, 5, 180),
+        unlimitedGenerationTime: raw.unlimitedGenerationTime !== false,
         useCurrentModel: raw.useCurrentModel !== false, model: String(raw.model || '').slice(0, 200),
         outgoingInjection: raw.outgoingInjection !== false,
         injectionMode: ['user', 'system', 'force'].includes(raw.injectionMode) ? raw.injectionMode : 'user',
@@ -453,17 +454,14 @@ export class Director {
         this.fill = task; s.refillAttempt = { turn, time: this.now() }; s.error = '';
         this.trace('事件池生成', 'info', '开始调用副 AI 生成候选事件。', { needed, poolCount: s.eventPool.length, contextMessages: s.contextMessages }, s.owner, '');
         this.save(ctx, s);
-        let timer;
+        const limit = generationLimit(s, controller, '副 AI 超时；正常聊天可继续', '事件生成已取消');
         try {
-            const timeout = new Promise((_, reject) => { timer = setTimeout(() => {
-                controller.abort(); reject(new Error('副 AI 超时；正常聊天可继续'));
-            }, s.timeoutSeconds * 1000); });
             const response = await Promise.race([(async () => {
                 const messages = await this.poolMessages(ctx, s, needed, controller.signal);
                 if (controller.signal.aborted || this.disposed || epoch !== this.epoch || this.context().chatMetadata !== ctx.chatMetadata || !s.enabled)
                     throw new Error('事件生成已取消');
                 return this.request(ctx, messages, s, controller.signal);
-            })(), timeout]);
+            })(), limit.promise]);
             this.trace('副 AI 返回', 'success', '已收到副 AI 响应，开始解析事件。', { characters: typeof response === 'string' ? response.length : 0 }, s.owner, '');
             if (this.disposed || controller.signal.aborted || epoch !== this.epoch || this.context().chatMetadata !== ctx.chatMetadata
                 || chatIdentity(this.context()) !== s.owner || !s.enabled) {
@@ -497,7 +495,7 @@ export class Director {
             }
             return false;
         } finally {
-            clearTimeout(timer);
+            limit.cleanup();
             if (this.fill === task) this.fill = null;
             this.changed();
         }
@@ -929,7 +927,7 @@ export class Director {
         this.fill = task; s.error = '';
         this.trace('即时情境生成', 'info', '读取当前情境生成临时候选；抽取后不保存候选池。', { count: settings.targetCount }, s.owner, '');
         this.save(ctx, s);
-        let timer;
+        const limit = generationLimit(settings, controller, '副 AI 超时；正常聊天可继续', '即时情境生成已取消');
         const current = () => !this.disposed && !controller.signal.aborted && epoch === this.epoch
             && this.context().chatMetadata === ctx.chatMetadata && chatIdentity(this.context()) === s.owner && s.enabled;
         try {
@@ -938,9 +936,7 @@ export class Director {
                 messages.push({ role: 'system', content: instantEventInstruction(settings.targetCount) });
                 if (!current()) throw new Error('即时情境生成已取消');
                 return this.request(ctx, messages, settings, controller.signal);
-            })(), new Promise((_, reject) => { timer = setTimeout(() => {
-                controller.abort(); reject(new Error('副 AI 超时；正常聊天可继续'));
-            }, settings.timeoutSeconds * 1000); })]);
+            })(), limit.promise]);
             if (!current()) return false;
             if (this.busy || instantContextKey(this.context(), settings) !== contextKey) throw new Error('准备期间聊天内容已变化，请重新投掷即时情境事件');
             const candidates = parseEvents(response, settings.targetCount, this.makeId);
@@ -964,7 +960,7 @@ export class Director {
             }
             return false;
         } finally {
-            clearTimeout(timer); if (this.fill === task) this.fill = null; this.changed();
+            limit.cleanup(); if (this.fill === task) this.fill = null; this.changed();
         }
     }
     dispose() { this.disposed = true; this.runAbortCleanup?.(); this.runAbortCleanup = null; this.discussion?.cancel(); this.cancelFill(); this.clear(); this.run = null; this.mainPromptSnapshots = new WeakMap(); }
@@ -978,3 +974,4 @@ import { progressionFocus, progressionPoolInstruction, progressionInjection, pro
 import { instantEventInstruction, instantContextKey } from './instant-events.js';
 import { StoryMode } from './story-mode.js';
 import { storyInjection } from './story-worldbook.js';
+import { generationLimit } from './request-limits.js';
