@@ -10,8 +10,18 @@ export function mountUI(director, context, doc = document) {
     root.innerHTML = `<summary>随机事件导演 <small>V${CURRENT_VERSION}</small></summary>
       <div class="red-body">
       <p class="red-help" data-role="settings-scope"></p>
-      <section class="red-settings-section"><h3>事件触发</h3><div class="red-settings-content">
+      <section class="red-settings-section" data-role="story-settings" hidden><h3>黄昏 · 剧情模式</h3><div class="red-settings-content">
+        <p class="red-help" data-role="story-index-status"></p>
+        <div class="red-setting-row"><label><input type="checkbox" data-setting="storyManual"> 取消自动投掷</label>
+        ${settingHelp('剧情模式自动投掷', '<p>默认在本段剧情完成后自动准备下一段。勾选后等待你再次投掷；手动结束后也会停下。</p>')}</div>
+        <div class="red-actions"><button type="button" class="menu_button" data-action="story-index">重建剧情索引</button><button type="button" class="menu_button" data-action="story-end">结束当前剧情</button></div>
+        ${settingHelp('剧情世界书', '<p>首次手动读取，由副AI给全部关联条目标注剧情日期或时间范围，包括停用条目。生成池时，有正文日期就读取就近剧情；没有日期就自动预览当前主提示词，根据实际注入的剧情或卷章生成。人物与基础设定作为通用资料。</p><p>无日期时会自动使用提示词预览，无需另开“提示词参考”，不会发送主AI请求。预览受读取字数上限约束；组装失败时停止并提示原因。只识别EJS，不执行它。旧阶段索引或世界书条目变化后需重新读取。</p>')}
+      </div></section>
+      <section class="red-settings-section"><h3>触发与推进</h3><div class="red-settings-content">
         <label class="red-primary-toggle"><input type="checkbox" data-setting="enabled"> <span data-role="enabled-label">开启本聊天的随机事件导演</span></label>
+        <div class="red-setting-row"><label><input type="checkbox" data-setting="progressionMode"> 事件推进模式</label>
+        ${settingHelp('事件推进模式', '<p>先抽取并确认一个起始事件。主聊天成功回复后，生成相关池并自动抽取后续；每个后续持续 3 个成功回复回合，再生成池并抽取下一个。默认推进 5 个后续事件，也可主动结束。</p><p>复用所选导演预设；失败、重生成和暂停不推进计数，此模式暂停概率和固定回合自动抽取。</p>')}</div>
+        <div class="red-setting-field red-conditional-setting" data-role="progression-settings" hidden><label class="red-column">后续事件轮数<input class="text_pole" type="number" min="1" max="20" data-setting="progressionCycles"></label></div>
         <div class="red-setting-row"><label><input type="checkbox" data-setting="fixedRoundEnabled"> 固定回合随机</label>
         ${settingHelp('固定回合随机', '<p>按设定回合数触发，关闭后恢复概率触发。完整回复后计数，重生成和后台请求不重复计数。</p>')}</div>
         <div class="red-setting-field red-conditional-setting" data-role="fixed-rounds" hidden><label class="red-column">固定回合数<input class="text_pole" type="number" min="1" max="100" data-setting="fixedRoundInterval"></label><p class="red-help" data-role="fixed-progress"></p></div>
@@ -71,13 +81,20 @@ export function mountUI(director, context, doc = document) {
         try { chat = director.state(); s = director.settingsState(); } catch (e) { field('status').textContent = e.message; return; }
         field('settings-scope').textContent = chat ? '正在编辑当前聊天的设置。' : '未打开聊天：可以配置 API 和预设；下方选项保存为新聊天默认值，不改变已有聊天。';
         field('enabled-label').textContent = chat ? '开启本聊天的随机事件导演' : '新聊天默认开启随机事件导演';
+        root.classList.toggle('red-dusk', Boolean(s?.storyMode));
+        field('story-settings').hidden = !s?.storyMode;
+        field('story-index-status').textContent = director.fill?.kind === 'story-index' ? '正在完整读取世界书并标注剧情时间…' : chat?.storyIndex?.version === 2
+            ? `时间索引 ${chat.storyIndex.keys.length} 条 · ${chat.storyDate || chat.storyReferenceLabel || '无日期时参考当前提示词'}${chat.storyEpisode ? ` · 已展开 ${chat.storyEpisode.turns} 回合` : ''}` : chat?.storyIndex ? '旧阶段索引需重新读取，以标注剧情时间。' : '尚未建立时间索引，请先手动读取世界书。';
+        root.querySelector('[data-action="story-index"]').textContent = chat?.storyIndex?.version === 2 ? '重建时间索引' : '读取世界书';
+        field('progression-settings').hidden = !s?.progressionMode;
         if (s?.owner !== lastOwner) { notice = ''; lastOwner = s?.owner; }
         if (!s?.pendingEvent && notice === '随机事件已准备，将在下一次正常生成时生效。') notice = '';
         connectionUI.refresh();
         for (const el of root.querySelectorAll('[data-setting]')) {
             const name = el.dataset.setting;
-            el.disabled = !s || (name === 'model' && s.useCurrentModel) || (name === 'triggerProbability' && s.fixedRoundEnabled)
-                || (['injectionMode', 'useMainPromptContext'].includes(name) && director.busy);
+            el.disabled = !s || (name === 'model' && s.useCurrentModel) || (name === 'triggerProbability' && (s.fixedRoundEnabled || s.progressionMode))
+                || (['fixedRoundEnabled', 'fixedRoundInterval'].includes(name) && s.progressionMode)
+                || (['injectionMode', 'useMainPromptContext', 'progressionMode'].includes(name) && director.busy);
             if (el.type === 'checkbox') el.checked = Boolean(s?.[name]);
             else if (doc.activeElement !== el) el.value = s?.[name] ?? '';
         }
@@ -89,10 +106,16 @@ export function mountUI(director, context, doc = document) {
         field('fixed-progress').textContent = chat ? `当前进度 ${chat.fixedRoundProgress} / ${s.fixedRoundInterval} 回合`
             : '新聊天从第一个回合开始计数。';
         field('count').textContent = chat ? `当前可用事件池：${chat.eventPool.length} / ${chat.targetCount}${director.fill ? ' · 副 AI 生成中…' : ''}` : '打开聊天后才能生成事件。';
-        field('pending').textContent = chat?.pendingEvent ? '随机事件已准备，将在对应的下一次正常生成时生效。' : '当前没有待用事件。';
+        field('pending').textContent = chat?.pendingEvent ? (chat.progressionMode && !chat.pendingEvent.confirmed
+            ? '事件已抽取，请到随机事件页或骰子小窗确认后使用。' : '随机事件已准备，将在对应的下一次正常生成时生效。') : '当前没有待用事件。';
         field('recent').textContent = `最近触发：${chat?.recentEvent?.title || '暂无'}`;
         field('status').textContent = chat?.error || notice || (chat?.refillStopped && !director.fill && !director.discussion?.guideTask ? '事件生成已暂停；请使用生成按钮或骰子小窗中的“重试生成”。' : '');
         for (const button of root.querySelectorAll('[data-action]')) button.disabled = !chat?.enabled || director.busy || Boolean(director.fill);
+        for (const name of ['progressionMode', 'fixedRoundEnabled', 'fixedRoundInterval', 'triggerProbability']) {
+            const control = root.querySelector(`[data-setting="${name}"]`); if (control && s?.storyMode) control.disabled = true;
+        }
+        root.querySelector('[data-action="story-index"]').disabled = !chat || director.busy || Boolean(director.fill || chat.storyEpisode || director.discussion?.chatTask);
+        root.querySelector('[data-action="story-end"]').disabled ||= !chat?.storyEpisode;
         const list = root.querySelector('#red-models'); list.replaceChildren();
         const models = new Set();
         for (const select of doc.querySelectorAll('select[id*="model"]')) for (const option of select.options) {
@@ -128,12 +151,13 @@ export function mountUI(director, context, doc = document) {
         const owner = director.state()?.owner;
         try {
             notice = '';
-            const task = action === 'roll' ? director.rollNow() : director.refill(true);
+            const task = action === 'story-index' ? director.story.prepare({ replace: true, manual: true, rebuild: true, indexOnly: true })
+                : action === 'story-end' ? director.story.end() : action === 'roll' ? director.rollNow() : director.refill(true);
             refresh();
             const done = await task;
             if (director.state()?.owner !== owner) { refresh(); return; }
             const state = director.state();
-            notice = done ? (action === 'roll' ? '随机事件已准备，将在下一次正常生成时生效。' : '事件池已更新。')
+            notice = done ? (action === 'story-index' ? '剧情索引已完整保存。' : action === 'story-end' ? '当前剧情已结束，等待再次投掷。' : action === 'roll' ? '随机事件已准备，将在下一次正常生成时生效。' : '事件池已更新。')
                 : state?.poolGenerated && !state.eventPool.length && !state.discussion.guide && !state.refillStopped
                     ? '事件池已用完，请等待更新回合，或手动更新事件池。' : '本次未准备新事件；正常聊天可继续。';
         } catch (e) { director.fail(e); }

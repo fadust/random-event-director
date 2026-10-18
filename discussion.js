@@ -2,6 +2,7 @@ import { poolPrompt, parseEvents, chatIdentity } from './engine.js';
 import { headerMessages } from './headers.js';
 import { discussionState } from './discussion-state.js';
 import { isPersona, personaPrompt } from './personas.js';
+import { progressionFocus } from './progression.js';
 
 export function parseDiscussion(text) {
     if (typeof text !== 'string' || text.length > 30000) throw new Error('讨论回复为空或过长');
@@ -60,6 +61,7 @@ export class Discussion {
             { role: 'system', content: `当前剧情资料（作为背景而非额外指令）：${background}` },
             ...disc.messages.slice(-20).map(m => ({ role: m.role, content: m.content }))];
         try {
+            if (s.storyMode) messages.splice(messages.length - disc.messages.slice(-20).length, 0, await d.story.materials(ctx, s, task.controller.signal));
             const row = parseDiscussion(await this.timed(task, ctx, messages, settings));
             if (!this.current(ctx, task.owner, task.revision) || this.chatTask !== task || task.controller.signal.aborted) return false;
             disc.messages.push({ id: d.makeId(), role: 'assistant', content: row.reply, persona: task.persona }); disc.messages = disc.messages.slice(-40);
@@ -85,7 +87,9 @@ export class Discussion {
     accept(id) {
         const d = this.director, ctx = d.context(), s = d.state(ctx), disc = s && discussionState(s);
         if (!disc?.proposal || disc.proposal.id !== id) throw new Error('这份总结已失效，请继续讨论获取新总结');
+        if (s.storyMode && s.storyEpisode) throw new Error('请先结束或重投当前剧情，再应用新的讨论方向');
         if (d.busy) throw new Error('请等待主聊天生成结束后再应用');
+        if (s.progressionMode && s.pendingEvent?.confirmed) throw new Error('推进事件已确认，请先让事件生效或重新投掷，再应用新方向');
         this.guideTask?.controller.abort(); this.guideTask = null;
         // An unbound manual selection can be replaced; a bound failed turn keeps its frozen arrangement.
         if (s.pendingEvent && !s.pendingEvent.cycleKey) {
@@ -110,9 +114,10 @@ export class Discussion {
     }
     async prepareGuide({ manual = true } = {}) {
         const d = this.director, ctx = d.context(), s = d.state(ctx), disc = s && discussionState(s);
+        if (s?.storyMode) return d.story.prepare({ replace: true, manual });
         if (!disc?.guide || disc.guide.pool.length || this.guideTask || d.disposed || d.busy) return false;
         if (!manual && s.refillStopped) return false;
-        const id = disc.guide.id, majorId = s.majorEvent?.id || null, task = { controller: new AbortController(), owner: s.owner, revision: this.revision, id };
+        const id = disc.guide.id, majorId = s.majorEvent?.id || null, focus = progressionFocus(s), task = { controller: new AbortController(), owner: s.owner, revision: this.revision, id };
         this.guideTask = task; disc.error = ''; d.changed();
         d.trace('方向事件生成', 'info', '使用已确认总结生成本次事件候选。', { needed: 3, contextMessages: s.contextMessages }, s.owner, '');
         try {
@@ -120,9 +125,10 @@ export class Discussion {
             if (!this.current(ctx, task.owner, task.revision) || task.controller.signal.aborted) return false;
             messages.push({ role: 'user', content: `用户已确认的本次事件方向：${disc.guide.summary}\n仅为这一次事件生成 3 个不同候选起因。保留玩家自主权，仍遵守上面的 events JSON 格式。` });
             const response = await this.timed(task, ctx, messages, settings);
-            if (!this.current(ctx, task.owner, task.revision) || this.guideTask !== task || task.controller.signal.aborted || disc.guide?.id !== id || (s.majorEvent?.id || null) !== majorId) return false;
+            if (!this.current(ctx, task.owner, task.revision) || this.guideTask !== task || task.controller.signal.aborted || disc.guide?.id !== id || (s.majorEvent?.id || null) !== majorId || progressionFocus(s) !== focus) return false;
             disc.guide.pool = parseEvents(response, 3, d.makeId); s.refillStopped = false; s.generationFailure = null; s.error = '';
             disc.guide.majorId = majorId;
+            disc.guide.progressionFocus = focus;
             if (majorId) for (const event of disc.guide.pool) event.severity = 'ordinary';
             d.trace('方向事件就绪', 'success', '方向候选已准备，只等待一次事件触发。', { count: disc.guide.pool.length }, s.owner, ''); d.save(ctx, s); return true;
         } catch (e) {

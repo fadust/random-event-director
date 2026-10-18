@@ -33,7 +33,7 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
         <div class="red-event-stats"><div><small>可用事件</small><strong data-window-role="event-count"></strong></div><div><small data-window-role="event-trigger-label">触发概率</small><strong data-window-role="event-probability"></strong></div></div>
         <div class="red-event-actions"><button type="button" class="red-dice-button" data-window="roll" aria-label="投掷十面骰，启用一个事件">${D10}<span data-window-role="dice-label">投掷并启用事件</span></button><div class="red-event-pool-actions"><button type="button" data-window="prepare-pool">准备 / 更新事件池</button><button type="button" data-window="reroll" title="废弃待用事件，从剩余候选中重新随机抽取">重新投掷</button></div></div>
         <button type="button" class="red-pool-link" data-view="pool">完整事件池 →</button>
-        <article class="red-event-card"><div class="red-event-card-label"><span aria-hidden="true">☾</span><span data-window-role="event-label"></span></div><h3 data-window-role="event-title"></h3><p data-window-role="event-hint"></p><details data-window-role="event-reveal" hidden><summary>查看事件内容（可能剧透）</summary><p data-window-role="event-content"></p></details></article>
+        <article class="red-event-card"><div class="red-event-card-label"><span aria-hidden="true">☾</span><span data-window-role="event-label"></span></div><h3 data-window-role="event-title"></h3><p data-window-role="event-hint"></p><details data-window-role="event-reveal" hidden><summary>查看事件内容（可能剧透）</summary><p data-window-role="event-content"></p></details><button type="button" data-window="confirm-event" hidden>确认并推进</button></article>
         <p class="red-event-notice" data-window-role="event-notice" role="status"></p><small class="red-event-footnote">点击骰子自动开启当前聊天并抽取一个事件；继续主聊天时生效，不会自动发送消息。</small>
         <div class="red-event-recent"><small>最近触发</small><span data-window-role="event-recent"></span></div><button type="button" class="red-text-button" data-view="settings">调整概率、上下文与预设 →</button>
       </div><div class="red-pool-view" data-page="pool" hidden><div class="red-page-heading"><span class="red-eyebrow">当前聊天 · 可能剧透</span><h2>完整事件池</h2><p data-window-role="pool-count"></p></div><div class="red-window-actions"><button type="button" data-window="regenerate-pool">重新生成</button></div><p class="red-help">重新生成会废弃普通候选池并重新生成，已抽取事件保留。</p><p class="red-event-notice" data-window-role="pool-notice" role="status"></p><div data-window-role="pool-list"></div><button type="button" data-view="events">返回随机事件</button></div><div class="red-settings-view" data-page="settings" hidden><div class="red-page-heading"><span class="red-eyebrow">让初月更懂你的故事</span><h2>导演设置</h2></div><p class="red-settings-intro">配置副 AI、预设与随机事件。API 连接和预设库可共用，当前聊天的选择独立保存。</p></div><div class="red-diagnostics-view" data-page="logs" hidden></div>`;
@@ -42,6 +42,47 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
     const eventWindow = doc.createElement('section'); eventWindow.id = 'red_director_event_window'; eventWindow.hidden = true;
     eventWindow.setAttribute('role', 'dialog'); eventWindow.setAttribute('aria-label', '本轮随机事件');
     eventWindow.innerHTML = `<header class="red-mini-head"><div class="red-mini-titlebar"><span>☾ <span data-mini="label">本轮随机事件</span></span><button type="button" data-mini-action="director">打开导演系统 <span aria-hidden="true">↗</span></button><button type="button" data-mini-action="close" aria-label="关闭事件小窗">×</button></div><div class="red-mini-toolbar"><label class="red-mini-toggle"><input type="checkbox" data-mini="enabled"> 开启随机事件</label><button type="button" class="red-mini-mode-stack" data-mini="dice-mode" data-mini-action="switch-mode" data-mode="pool" aria-label="切换投掷方式，当前常规投掷"><span class="red-mini-mode-card" data-mode-card="pool" aria-hidden="true"><strong>常规投掷</strong><small>从当前事件池中抽取</small></span><span class="red-mini-mode-card" data-mode-card="instant" aria-hidden="true"><strong>即时投掷</strong><small>围绕眼前情境，即时生成并抽取</small></span></button></div></header><div class="red-mini-body"><div class="red-mini-event"><h3 data-mini="title"></h3><p data-mini="hint"></p><details data-mini="reveal" hidden><summary>查看事件内容（可能剧透）</summary><p data-mini="content"></p></details><p data-mini="notice" role="status" aria-live="polite"></p><div class="red-mini-failure-actions" data-mini="failure-actions" hidden><button type="button" data-mini-action="retry">重试生成</button><button type="button" data-mini-action="logs">查看日志</button></div></div></div><footer><button type="button" data-mini-action="roll">点击投掷</button></footer>`;
+    const confirmMini = doc.createElement('button'); confirmMini.type = 'button'; confirmMini.dataset.miniAction = 'confirm-event';
+    confirmMini.textContent = '确认并推进'; confirmMini.hidden = true;
+    eventWindow.querySelector('.red-mini-event').append(confirmMini);
+    const storySwitch = doc.createElement('button'); storySwitch.type = 'button'; storySwitch.className = 'red-story-mode-switch';
+    storySwitch.dataset.miniAction = 'story-mode'; storySwitch.textContent = '剧情模式';
+    eventWindow.querySelector('.red-mini-toolbar').append(storySwitch);
+    const storyHeadSwitch = storySwitch.cloneNode(true); storyHeadSwitch.removeAttribute('data-mini-action');
+    window.querySelector('.red-window-tools').prepend(storyHeadSwitch);
+    const storyIntro = doc.createElement('dialog'); storyIntro.id = 'red_story_intro';
+    storyIntro.setAttribute('aria-labelledby', 'red_story_intro_title');
+    storyIntro.innerHTML = `<h3 id="red_story_intro_title">黄昏，从读懂世界开始</h3><p>首次使用或升级旧索引，需要将关联世界书交给副 AI 阅读，标注剧情日期。之后有正文时间就读取临近剧情，没有时间就参考当前提示词中实际注入的剧情；通用设定继续保留。</p><p data-story-intro-status role="status" aria-live="polite"></p><div><button type="button" data-story-intro="later">稍后再读</button><button type="button" data-story-intro="read">读取世界书</button></div>`;
+    doc.body.append(storyIntro);
+    const introRead = storyIntro.querySelector('[data-story-intro="read"]');
+    const introStatus = storyIntro.querySelector('[data-story-intro-status]');
+    function showStoryIntro() {
+        const state = director.state();
+        if (disposed || !director.settingsState()?.storyMode || state?.storyIndex?.version === 2) return;
+        introStatus.textContent = state ? '点击读取后才会调用副 AI；读取完成后再投掷剧情。' : '请先打开一个角色聊天，再读取关联世界书。';
+        introRead.disabled = !state || director.busy || Boolean(director.fill);
+        if (!storyIntro.open) { if (storyIntro.showModal) storyIntro.showModal(); else storyIntro.setAttribute('open', ''); }
+    }
+    const closeStoryIntro = () => { if (storyIntro.close) storyIntro.close(); else storyIntro.removeAttribute('open'); };
+    storyIntro.querySelector('[data-story-intro="later"]').addEventListener('click', closeStoryIntro);
+    introRead.addEventListener('click', async () => {
+        const owner = director.state()?.owner; introRead.disabled = true; introStatus.textContent = '正在阅读世界书并标注剧情时间…';
+        try {
+            const done = await director.story.prepare({ replace: true, manual: true, rebuild: true, indexOnly: true });
+            if (disposed || director.state()?.owner !== owner) return;
+            if (done) { eventNotice = '世界书时间索引已保存，点击投掷即可开始剧情。'; closeStoryIntro(); }
+            else introStatus.textContent = director.state()?.error || '暂时无法读取，请结束正在运行的任务后重试。';
+        } catch (error) { introStatus.textContent = error.message; }
+        finally { if (!disposed) { introRead.disabled = director.busy || Boolean(director.fill); refresh(); } }
+    });
+    director.requestStoryReading = showStoryIntro;
+    const toggleStory = () => {
+        try { director.update({ storyMode: !director.settingsState()?.storyMode }); eventNotice = ''; }
+        catch (error) { eventNotice = error.message; }
+        refresh();
+        if (director.settingsState()?.storyMode) showStoryIntro(); else closeStoryIntro();
+    };
+    storyHeadSwitch.addEventListener('click', toggleStory);
     const miniToggle = eventWindow.querySelector('.red-mini-toggle');
     miniToggle.addEventListener('pointerdown', event => event.stopPropagation());
     doc.body.append(window, diceDock, eventWindow);
@@ -125,6 +166,15 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
     }
     function refresh() {
         const state = director.state(), disc = state?.discussion, currentOwner = state?.owner || null;
+        const storyActive = Boolean(director.settingsState()?.storyMode);
+        for (const surface of [window, eventWindow, diceDock]) surface.classList.toggle('red-dusk', storyActive);
+        window.querySelector('[data-page="events"] .red-page-heading h2').textContent = storyActive ? '黄昏剧情' : '随机事件';
+        window.querySelector('[data-page="events"] .red-page-heading p').textContent = storyActive ? '读懂世界，让一段故事慢慢展开。' : '一点意外，让故事自然往前走。';
+        for (const control of [storySwitch, storyHeadSwitch]) {
+            control.textContent = storyActive ? '剧情模式 ☀' : '随机模式 ☾';
+            control.title = storyActive ? '切回随机模式（废弃当前池和剧情）' : '切换黄昏剧情模式（废弃当前池和事件）';
+            control.setAttribute('aria-pressed', String(storyActive)); control.disabled = director.busy;
+        }
         if (owner !== currentOwner) { owner = currentOwner; shownFailureId = null; input.value = ''; notice = ''; eventNotice = ''; transcriptKey = ''; pendingId = null; get('event-reveal').open = false; eventWindow.hidden = true; mini('reveal').open = false; }
         const ctx = context(); get('owner').textContent = state ? `${ctx.name2 || '当前角色'} · 当前聊天` : '未打开聊天 · 正在配置新聊天默认值';
         const persona = discussionPersona(disc?.persona);
@@ -174,24 +224,33 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
         mini('enabled').checked = Boolean(state?.enabled); mini('enabled').disabled = !state;
         const diceMode = state?.diceMode || 'pool';
         mini('dice-mode').dataset.mode = diceMode;
+        mini('dice-mode').hidden = storyActive;
         mini('dice-mode').setAttribute('aria-label', `切换投掷方式，当前${diceMode === 'instant' ? '即时投掷' : '常规投掷'}`);
-        mini('dice-mode').disabled = !state || director.busy || Boolean(director.fill || director.discussion?.guideTask || state.majorEvent);
+        mini('dice-mode').disabled = !state || director.busy || Boolean(director.fill || director.discussion?.guideTask || state.majorEvent || state.progression);
         get('event-count').textContent = state ? `${state.eventPool.length} / ${state.targetCount}` : '—';
-        get('event-trigger-label').textContent = state?.diceMode === 'instant' ? '即时情境' : state?.fixedRoundEnabled ? '固定回合触发' : '触发概率';
-        get('event-probability').textContent = state ? (state.diceMode === 'instant' ? '手动 · 一次' : state.fixedRoundEnabled ? `每 ${state.fixedRoundInterval} 回合` : `${state.triggerProbability}%`) : '—';
+        get('event-trigger-label').textContent = state?.diceMode === 'instant' ? '即时情境' : state?.progressionMode ? '事件推进' : state?.fixedRoundEnabled ? '固定回合触发' : '触发概率';
+        get('event-probability').textContent = state ? (state.diceMode === 'instant' ? '手动 · 一次' : state.progressionMode ? '每事件 3 回合' : state.fixedRoundEnabled ? `每 ${state.fixedRoundInterval} 回合` : `${state.triggerProbability}%`) : '—';
         const actionRunning = Boolean(eventTask), rolling = diceAnimating || (eventTask?.owner === currentOwner && eventTask?.action === 'roll');
         const preparing = Boolean(director.fill || director.discussion?.guideTask);
         const failure = state?.refillStopped ? state.generationFailure : null;
         const failed = Boolean(failure && !preparing && !actionRunning);
-        get('event-label').textContent = pending ? (pending.instant ? '即时情境 · 等待本轮生成' : '已抽取 · 等待本轮生成') : (preparing || actionRunning ? '初月正在准备事件' : '下一次意外，尚未揭晓');
+        const needsConfirmation = Boolean(pending && state.diceMode !== 'instant' && state.progressionMode && !state.pendingEvent.confirmed);
+        get('event-label').textContent = pending ? (pending.instant ? '即时情境 · 等待本轮生成' : needsConfirmation ? '已抽取 · 等待确认' : state.progressionMode ? '已确认 · 等待本轮生成' : '已抽取 · 等待本轮生成') : (preparing || actionRunning ? '初月正在准备事件' : '下一次意外，尚未揭晓');
         get('event-title').textContent = pending?.title || (state ? '让故事多一点可能' : '请先打开一个聊天');
-        get('event-hint').textContent = pending ? (pending.instant ? '即时情境事件已准备。下一次主聊天使用一次；临时候选池已丢弃，普通池保留。' : state.majorEvent && pending.id === state.majorEvent.id
+        get('event-hint').textContent = pending ? (pending.instant ? '即时情境事件已准备。下一次主聊天使用一次；临时候选池已丢弃，普通池保留。' : state.progressionMode
+            ? (needsConfirmation ? '可以查看内容、重新投掷，或确认并推进。未确认不会使用这个事件，也不会改变事件池方向。'
+                : state.progression?.stageIndex > 0 ? '后续已自动抽取，继续主聊天即可；同一事件展开三个成功回复回合后自动抽取下一个。'
+                    : '继续主聊天；成功生效后自动生成相关池并开始后续事件，每个后续展开三个回合。') : state.majorEvent && pending.id === state.majorEvent.id
             ? `重大事件已准备，首次成功回复后开始计时，持续 ${state.majorEvent.duration} 回合。`
             : '事件已准备，将在对应的正常生成中生效；成功回复后结束本次注入。') : '保持自然的随机触发，或亲手掷骰，迎接一个小变化。';
         get('event-reveal').hidden = !pending; get('event-content').textContent = pending?.content || '';
+        for (const confirm of [button('confirm-event'), confirmMini]) {
+            confirm.hidden = !needsConfirmation; confirm.disabled = !state?.enabled || director.busy || preparing || actionRunning;
+        }
         get('event-recent').textContent = state?.recentEvent?.title || '暂无';
         window.querySelector('.red-event-footnote').textContent = state?.diceMode === 'instant'
-            ? '即时情境只生成当前活动相关的候选，随机抽取一次后丢弃临时池。每次投掷额外调用副 AI；不自动抽取，不启动持续推进。'
+            ? '即时情境只生成当前活动相关的候选，随机抽取一次后丢弃临时池。每次投掷额外调用副 AI；不自动抽取，不启动持续推进。' : state?.progressionMode
+            ? '骰子打开操作小窗。确认起始事件后，每个后续持续三个成功回复回合，默认推进五个后续；可随时暂停或结束。'
             : '骰子打开操作小窗；勾选开启后，点击框内投掷按钮抽取事件。继续主聊天时生效，不会自动发送消息。';
         const stoppedNotice = state?.refillStopped && !preparing && !actionRunning ? '事件生成已暂停；请使用准备按钮或骰子小窗中的“重试生成”。' : '';
         get('event-notice').textContent = state?.error || eventNotice || stoppedNotice || (!state?.enabled && state ? '已暂停；在骰子小窗或上方勾选“开启随机事件”后继续。' : '');
@@ -208,18 +267,20 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
         floatingDie.title = diceTitle; button('roll').title = diceTitle;
         floatingDie.setAttribute('aria-busy', String(actionRunning || preparing)); button('roll').setAttribute('aria-busy', String(actionRunning || preparing));
         diceDock.hidden = Boolean(director.settingsState()?.hideDice);
-        const major = state?.majorEvent;
-        diceDock.classList.toggle('red-major-active', Boolean(major));
+        const major = state?.progression || state?.majorEvent;
+        diceDock.classList.toggle('red-major-active', Boolean(major || state?.storyEpisode));
         for (const card of [window.querySelector('[data-major-card]'), diceDock.querySelector('[data-major-card]')]) {
             card.hidden = !major;
-            card.querySelector('small').textContent = '重大事件';
-            card.querySelector('[data-major-role="title"]').textContent = major?.event.title || '';
-            card.querySelector('[data-major-role="turns"]').textContent = major
+            card.querySelector('small').textContent = state?.progression ? '事件推进' : '重大事件';
+            card.querySelector('[data-major-role="title"]').textContent = state?.progression && state.pendingEvent?.confirmed ? pending?.title : major?.event.title || '';
+            card.querySelector('[data-major-role="turns"]').textContent = state?.progression
+                ? `${state.enabled ? '' : '已暂停 · '}${major.started ? (major.awaitingNext ? `等待准备下个事件 · 已完成 ${major.stageIndex} / ${major.cycles} 个后续`
+                    : `第 ${major.stageIndex} / ${major.cycles} 个后续 · 本事件剩余 ${major.stageRemaining} / 3 回合`) : `起始方向待生效 · 之后推进 ${major.cycles} 个后续`}` : major
                 ? `${state.enabled ? '' : '已暂停 · '}剩余 ${major.remaining} / ${major.duration} 回合${major.started ? (major.remaining === 1 ? ' · 本轮收尾' : '') : ' · 等待首次生效'}` : '';
             card.querySelector('button').disabled = !major || director.busy || actionRunning;
-            card.querySelector('button').textContent = '结束重大事件';
+            card.querySelector('button').textContent = state?.progression ? '结束事件推进' : '结束重大事件';
         }
-        diceFeedback.textContent = failed ? '生成失败' : (preparing || actionRunning ? '准备中…' : (pending ? '本轮已启用' : eventNotice));
+        diceFeedback.textContent = failed ? '生成失败' : (preparing || actionRunning ? '准备中…' : (pending ? (needsConfirmation ? '等待确认' : '本轮已启用') : eventNotice));
         mini('label').textContent = failed ? '生成失败 · 已暂停' : get('event-label').textContent;
         mini('title').textContent = failed ? '事件未生成成功' : (preparing || actionRunning ? '正在准备事件…' : (pending?.title || (state ? '本轮暂无事件' : '请先打开一个聊天')));
         mini('hint').textContent = !state?.enabled ? '已暂停。勾选上方开关后才会继续随机事件；主聊天可以正常使用。' : failed ? `原因：${failure.message}` : (preparing || actionRunning ? (director.fill?.kind === 'instant' ? '正在读取当前情境，生成临时候选并抽取一次…' : '准备完成后会在这里显示抽取结果。') : (pending ? get('event-hint').textContent : (director.busy ? '主 AI 正在生成，请稍后再投掷。' : state?.diceMode === 'instant' ? '每次投掷重新读取当前情境，临时生成并抽取一次。战斗只围绕战斗，约会只围绕约会；不会保存池子。' : '点击下方按钮抽取，继续主聊天时生效。')));
@@ -233,6 +294,29 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
         rollMini.disabled = !state?.enabled || (pending ? button('reroll').disabled
             : director.busy || preparing || actionRunning || Boolean(failure));
         retry.textContent = preparing || actionRunning ? '正在重试…' : '重试生成';
+        if (storyActive) {
+            const episode = state?.storyEpisode;
+            const title = episode?.event.title || (state?.storyHalted ? '剧情已停止' : '等待下一段剧情');
+            const hint = episode ? `依据 ${episode.reference || episode.date || state.storyReferenceLabel || state.storyDate || '当前剧情'} · 已展开 ${episode.turns} 回合。继续主聊天，主AI会判断何时完成；不满意可重新投掷。`
+                : state?.storyHalted || state?.storyManual ? '点击下方投掷，开始一段新的剧情。' : '首次手动读取世界书后，准备相关资料并抽取剧情；主聊天仍由你发送。';
+            get('event-trigger-label').textContent = '世界书剧情';
+            get('event-probability').textContent = state?.storyIndex?.version === 2 ? state.storyDate || state.storyReferenceLabel || '无日期时参考提示词' : '等待读取时间索引';
+            get('event-label').textContent = episode ? '黄昏剧情 · 持续推进' : '黄昏剧情 · 尚未开始';
+            get('event-title').textContent = title; get('event-hint').textContent = hint;
+            get('event-reveal').hidden = !episode; get('event-content').textContent = episode?.event.content || '';
+            window.querySelector('.red-event-footnote').textContent = '有日期按时间读取临近剧情，无日期参考当前注入的剧情；完整回复明确标记完成后进入下一段。可随时暂停、重投或结束。';
+            if (!failed && !preparing && !actionRunning) { mini('label').textContent = get('event-label').textContent; mini('title').textContent = title; mini('hint').textContent = hint; }
+            if (preparing) mini('hint').textContent = director.fill?.kind === 'story-index' ? '正在读取全部条目并标注剧情时间…' : '正在读取日期或当前提示词中的剧情，准备大纲…';
+            mini('reveal').hidden = !episode; mini('content').textContent = episode?.event.content || '';
+            button('reroll').disabled = !state?.enabled || director.busy || preparing || actionRunning;
+            rollMini.disabled = !state?.enabled || director.busy || preparing || actionRunning || Boolean(failure);
+            for (const card of [window.querySelector('[data-major-card]'), diceDock.querySelector('[data-major-card]')]) {
+                card.hidden = !episode; card.querySelector('small').textContent = '黄昏剧情';
+                card.querySelector('[data-major-role="title"]').textContent = title;
+                card.querySelector('[data-major-role="turns"]').textContent = `${episode?.reference || episode?.date || state?.storyReferenceLabel || state?.storyDate || '当前剧情'} · 已展开 ${episode?.turns || 0} 回合${state?.enabled ? '' : ' · 已暂停'}`;
+                card.querySelector('button').textContent = '结束当前剧情'; card.querySelector('button').disabled = director.busy || actionRunning;
+            }
+        }
         if (!failure) shownFailureId = null;
         const showFailure = failed && shownFailureId !== failure.id;
         if (showFailure) { shownFailureId = failure.id; eventWindow.hidden = false; }
@@ -244,6 +328,10 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
         if (action === 'open-dice') { showEvent(); return; }
         if (action === 'roll' || action === 'retry') showEvent();
         const state = director.state(), currentOwner = state?.owner;
+        if (action === 'confirm-event') {
+            if (director.confirmEvent()) eventNotice = '已确认，继续主聊天；成功生效后准备相关后续。';
+            refresh(); return;
+        }
         const cancellingMajor = action === 'end-major' || (action === 'reroll' && state?.majorEvent && !state.majorEvent.started);
         if (!state || (!state.enabled && !cancellingMajor) || eventTask || director.busy || (!cancellingMajor && (director.fill || director.discussion?.guideTask)) || (action === 'roll' && (state.pendingEvent || (state.refillStopped && state.generationFailure)))) return;
         const token = { action, owner: currentOwner }; eventTask = token;
@@ -254,7 +342,7 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
         }
         try {
             eventNotice = action === 'roll' ? '正在投掷并准备事件…' : '正在更新事件池…';
-            const task = action === 'end-major' ? director.endMajor() : action === 'retry' ? director.retryGeneration()
+            const task = action === 'end-major' ? (state.storyMode ? director.story.end() : state.progression ? director.endProgression() : director.endMajor()) : action === 'retry' ? director.retryGeneration()
                 : action === 'reroll' ? director.reroll()
                     : action === 'regenerate-pool' ? director.regeneratePool()
                         : action === 'roll' ? director.rollNow() : director.refill(true); refresh();
@@ -262,8 +350,8 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
             if (disposed || director.state()?.owner !== currentOwner) return;
             refresh();
                 const current = director.state();
-                eventNotice = action === 'end-major' && done ? '当前事件线已结束，恢复普通事件池。' : done ? (!['prepare-pool', 'regenerate-pool'].includes(action)
-                    ? '本轮事件已启用，继续主聊天即可。' : '事件池已更新，等待故事的下一幕。')
+                eventNotice = action === 'end-major' && done ? (current?.storyMode ? '当前剧情已结束，等待你再次投掷。' : '当前事件线已结束，恢复普通事件池。') : done ? (!['prepare-pool', 'regenerate-pool'].includes(action)
+                    ? (current?.progressionMode && !current.pendingEvent?.confirmed ? '事件已抽取，可以确认使用或重新投掷。' : '本轮事件已启用，继续主聊天即可。') : '事件池已更新，等待故事的下一幕。')
                     : current?.poolGenerated && !current.eventPool.length && !current.discussion.guide && !current.refillStopped
                         ? '事件池已用完，请等待更新回合，或手动更新事件池。' : '本次未启用新事件，请检查连接或稍后重试。';
         } catch (e) { if (!disposed && director.state()?.owner === currentOwner) eventNotice = e.message; }
@@ -299,7 +387,7 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
             else if (action === 'retry-guide') void director.discussion.prepareGuide();
             else if (action === 'clear') director.discussion.clearHistory();
             else if (action === 'roll') { showEvent(); return; }
-            else if (['reroll', 'prepare-pool', 'regenerate-pool', 'end-major'].includes(action)) { void eventAction(action); return; }
+            else if (['reroll', 'prepare-pool', 'regenerate-pool', 'end-major', 'confirm-event'].includes(action)) { void eventAction(action); return; }
         } catch (e) { notice = e.message; }
         refresh();
     }
@@ -307,7 +395,7 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
         if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); void send(); }
     };
     const launch = event => { const target = event.target.closest('[data-launch]'); if (target) open(target.dataset.launch); };
-    const throwDice = () => { showEvent(); };
+    const throwDice = () => { if (eventWindow.hidden) showEvent(); else eventWindow.hidden = true; };
     const change = event => {
         try {
             if (event.target === get('enable-events')) director.update({ enabled: event.target.checked });
@@ -329,13 +417,15 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
     const miniClick = event => {
         const action = event.target.closest('[data-mini-action]')?.dataset.miniAction;
         if (action === 'close') eventWindow.hidden = true;
+        else if (action === 'story-mode') toggleStory();
         else if (action === 'switch-mode') {
             try { director.update({ diceMode: director.state()?.diceMode === 'instant' ? 'pool' : 'instant' }); eventNotice = ''; }
             catch (e) { eventNotice = e.message; }
             refresh();
         }
-        else if (action === 'roll') void eventAction(director.state()?.pendingEvent ? 'reroll' : 'roll');
+        else if (action === 'roll') void eventAction(director.state()?.pendingEvent || director.state()?.storyEpisode ? 'reroll' : 'roll');
         else if (action === 'retry') void eventAction('retry');
+        else if (action === 'confirm-event') void eventAction('confirm-event');
         else if (action === 'logs') { eventWindow.hidden = true; open('logs'); }
         else if (action === 'director') { eventWindow.hidden = true; open('events'); }
     };
@@ -374,6 +464,8 @@ export function mountWorkspace(director, context, settings, settingsHost, doc = 
         eventWindow.removeEventListener('click', miniClick); eventWindow.remove();
         eventWindow.removeEventListener('change', miniChange);
         floatingDie.removeEventListener('click', throwDice); diceDock.remove();
+        if (director.requestStoryReading === showStoryIntro) director.requestStoryReading = null;
+        storyIntro.remove();
         diagnosticsUI.dispose();
         updateUI.dispose();
         observer?.disconnect(); menuButton.removeEventListener('click', fromMenu); menuButton.remove(); entry.removeEventListener('click', launch); entry.remove();

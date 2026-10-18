@@ -80,6 +80,7 @@ export async function requestModels(ctx, connection, signal, fetchImpl = globalT
 }
 
 export async function requestPool(ctx, messages, settings, signal, connection = { mode: 'current' }) {
+    const maxTokens = Number.isInteger(settings.maxOutputTokens) ? Math.max(2200, Math.min(16000, settings.maxOutputTokens)) : 2200;
     const own = connectionConfig(connection);
     const send = (service, payload) => {
         const outbound = omitSampling(payload, own.excludeSampling);
@@ -98,7 +99,7 @@ export async function requestPool(ctx, messages, settings, signal, connection = 
         // Start with a fresh payload. Never inherit another connection's credentials, URL, body or headers.
         const payload = { chat_completion_source: 'custom', custom_url: endpoint,
             custom_include_headers: JSON.stringify({ Authorization: own.apiKey ? `Bearer ${own.apiKey}` : '' }),
-            custom_prompt_post_processing: '', model: own.model, messages, stream: false, max_tokens: 2200, n: 1, temperature: 0.8 };
+            custom_prompt_post_processing: '', model: own.model, messages, stream: false, max_tokens: maxTokens, n: 1, temperature: 0.8 };
         signal.throwIfAborted();
         try { return (await send(service, payload)).content; }
         catch (e) {
@@ -108,7 +109,7 @@ export async function requestPool(ctx, messages, settings, signal, connection = 
     }
     if (ctx.onlineStatus === 'no_connection') throw new Error('请先连接酒馆 API');
     if (!settings.useCurrentModel && !settings.model.trim()) throw new Error('请选择或填写副 AI 模型 ID');
-    const overrides = { stream: false, max_tokens: 2200, n: 1, temperature: 0.8 };
+    const overrides = { stream: false, max_tokens: maxTokens, n: 1, temperature: 0.8 };
     if (!settings.useCurrentModel) overrides.model = settings.model.trim();
     if (ctx.mainApi === 'openai') {
         const service = ctx.ChatCompletionService;
