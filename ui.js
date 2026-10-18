@@ -51,8 +51,8 @@ export function mountUI(director, context, doc = document) {
         <div class="red-setting-field"><label class="red-column">重大事件持续回合<input class="text_pole" type="number" min="1" max="20" data-setting="majorEventTurns"></label>
         ${settingHelp('重大事件持续回合', '<p>默认持续 5 个成功回复回合，期间使用相关事件池，最后一回合尝试自然收尾。到期或手动结束后恢复普通池。</p><p>失败和同一回合重生成不重复计数。修改持续回合只影响之后抽取的重大事件。</p>')}</div>
         <div class="red-setting-field"><div class="red-setting-row"><label for="red-ai-timeout">副 AI 超时（秒）</label><label><input type="checkbox" data-setting="unlimitedGenerationTime"> 不限时</label></div>
-        <input id="red-ai-timeout" class="text_pole" type="number" min="5" max="180" data-setting="timeoutSeconds">
-        ${settingHelp('副 AI 生成时间', '<p>默认勾选“不限时”，等待生成完成，可手动停止。取消勾选后按填写的秒数限制，范围为 5～180 秒。</p><p>适用于事件生成、小窗讨论和世界书首次读取；API 服务自身的超时限制仍有效。</p>')}</div>
+        <input id="red-ai-timeout" class="text_pole" type="number" min="5" max="600" data-setting="timeoutSeconds">
+        ${settingHelp('副 AI 生成时间', '<p>默认勾选“不限时”，等待生成完成，可手动停止。取消勾选后按填写的秒数限制，范围为 5～600 秒。</p><p>适用于事件生成、小窗讨论和世界书首次读取；API 服务自身的超时限制仍有效。</p>')}</div>
         <div class="red-setting-row red-setting-wide"><label><input type="checkbox" data-setting="outgoingInjection"> 增强事件注入</label>
         ${settingHelp('增强事件注入', '<p>用于前两种注入方式：发送前补回缺失的本轮事件、整理重复副本，保留其他插件的内容。遇到特殊预设不兼容时可关闭。</p><p>强制方式始终补写事件，不受此开关影响。</p>')}</div>
       </div></details>

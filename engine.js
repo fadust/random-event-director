@@ -22,7 +22,7 @@ export function config(raw = {}) {
         includeHiddenMessages: raw.includeHiddenMessages === true,
         useMainPromptContext: raw.useMainPromptContext === true,
         hideDice: raw.hideDice === true,
-        timeoutSeconds: clamp(raw.timeoutSeconds, 45, 5, 180),
+        timeoutSeconds: clamp(raw.timeoutSeconds, 45, 5, 600),
         unlimitedGenerationTime: raw.unlimitedGenerationTime !== false,
         useCurrentModel: raw.useCurrentModel !== false, model: String(raw.model || '').slice(0, 200),
         outgoingInjection: raw.outgoingInjection !== false,
