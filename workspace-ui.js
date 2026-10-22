@@ -34,15 +34,56 @@ Enter to send, Shift+Enter for a new line"></textarea><button type="button" data
         <div class="red-event-stats"><div><small>Available events</small><strong data-window-role="event-count"></strong></div><div><small data-window-role="event-trigger-label">Trigger probability</small><strong data-window-role="event-probability"></strong></div></div>
         <div class="red-event-actions"><button type="button" class="red-dice-button" data-window="roll" aria-label="Roll the ten-sided die to enable an event">${D10}<span data-window-role="dice-label">Roll and enable an event</span></button><div class="red-event-pool-actions"><button type="button" data-window="prepare-pool">Prepare / update event pool</button><button type="button" data-window="reroll" title="Discard the pending event and draw again at random from the remaining candidates">Reroll</button></div></div>
         <button type="button" class="red-pool-link" data-view="pool">Full event pool →</button>
-        <article class="red-event-card"><div class="red-event-card-label"><span aria-hidden="true">☾</span><span data-window-role="event-label"></span></div><h3 data-window-role="event-title"></h3><p data-window-role="event-hint"></p><details data-window-role="event-reveal" hidden><summary>View event content (may spoil)</summary><p data-window-role="event-content"></p></details></article>
+        <article class="red-event-card"><div class="red-event-card-label"><span aria-hidden="true">☾</span><span data-window-role="event-label"></span></div><h3 data-window-role="event-title"></h3><p data-window-role="event-hint"></p><details data-window-role="event-reveal" hidden><summary>View event content (may spoil)</summary><p data-window-role="event-content"></p></details><button type="button" data-window="confirm-event" hidden>Confirm and continue</button></article>
         <p class="red-event-notice" data-window-role="event-notice" role="status"></p><small class="red-event-footnote">Clicking the die turns on the current chat and draws an event; it takes effect when you continue the main chat and never sends a message by itself.</small>
         <div class="red-event-recent"><small>Last triggered</small><span data-window-role="event-recent"></span></div><button type="button" class="red-text-button" data-view="settings">Adjust probability, context and presets →</button>
-      </div><div class="red-pool-view" data-page="pool" hidden><div class="red-page-heading"><span class="red-eyebrow">Current chat · may spoil</span><h2>Full event pool</h2><p data-window-role="pool-count"></p></div><div class="red-window-actions"><button type="button" data-window="regenerate-pool">Regenerate</button></div><p class="red-help">Regenerating discards the regular candidate pool and generates a new one; drawn events are kept.</p><p class="red-event-notice" data-window-role="pool-notice" role="status"></p><div data-window-role="pool-list"></div><button type="button" data-view="events">Back to random events</button></div><div class="red-settings-view" data-page="settings" hidden><div class="red-page-heading"><span class="red-eyebrow">Help Chuyue understand your story</span><h2>Director settings</h2></div><p class="red-settings-intro">Configure the secondary AI, presets and random events. The API connection and preset library are shared; the current chat's choices are saved separately.</p></div><div class="red-diagnostics-view" data-page="logs" hidden></div>`;
+      </div><div class="red-pool-view" data-page="pool" hidden><div class="red-page-heading"><span class="red-eyebrow">Current chat · may spoil</span><h2>Full event pool</h2><p data-window-role="pool-count"></p></div><div class="red-window-actions"><button type="button" data-window="regenerate-pool">Regenerate</button></div><p class="red-help">Regenerating discards the regular candidate pool and generates it again; drawn events are kept.</p><p class="red-event-notice" data-window-role="pool-notice" role="status"></p><div data-window-role="pool-list"></div><button type="button" data-view="events">Back to random events</button></div><div class="red-settings-view" data-page="settings" hidden><div class="red-page-heading"><span class="red-eyebrow">Help Chuyue understand your story</span><h2>Director settings</h2></div><p class="red-settings-intro">Configure the secondary AI, presets and random events. API connections and the preset library can be shared; the current chat's choices are saved separately.</p></div><div class="red-diagnostics-view" data-page="logs" hidden></div>`;
     const diceDock = doc.createElement('div'); diceDock.id = 'red_director_dice_dock';
     diceDock.innerHTML = `<aside class="red-major-status" data-major-card hidden aria-label="Current major event"><small>Major event</small><strong data-major-role="title"></strong><span data-major-role="turns" aria-live="polite"></span><button type="button" data-major-action="end">End major event</button></aside><button type="button" class="red-floating-die" aria-label="Roll the ten-sided die to enable an event">${D10}</button><span class="red-dice-feedback" role="status" aria-live="polite"></span>`;
     const eventWindow = doc.createElement('section'); eventWindow.id = 'red_director_event_window'; eventWindow.hidden = true;
     eventWindow.setAttribute('role', 'dialog'); eventWindow.setAttribute('aria-label', 'This round\'s random event');
     eventWindow.innerHTML = `<header class="red-mini-head"><div class="red-mini-titlebar"><span>☾ <span data-mini="label">This round's random event</span></span><button type="button" data-mini-action="director">Open director system <span aria-hidden="true">↗</span></button><button type="button" data-mini-action="close" aria-label="Close event window">×</button></div><div class="red-mini-toolbar"><label class="red-mini-toggle"><input type="checkbox" data-mini="enabled"> Turn on random events</label><button type="button" class="red-mini-mode-stack" data-mini="dice-mode" data-mini-action="switch-mode" data-mode="pool" aria-label="Switch roll mode, currently Regular roll"><span class="red-mini-mode-card" data-mode-card="pool" aria-hidden="true"><strong>Regular roll</strong><small>Draw from the current event pool</small></span><span class="red-mini-mode-card" data-mode-card="instant" aria-hidden="true"><strong>Instant roll</strong><small>Generate and draw on the spot from the current situation</small></span></button></div></header><div class="red-mini-body"><div class="red-mini-event"><h3 data-mini="title"></h3><p data-mini="hint"></p><details data-mini="reveal" hidden><summary>View event content (may spoil)</summary><p data-mini="content"></p></details><p data-mini="notice" role="status" aria-live="polite"></p><div class="red-mini-failure-actions" data-mini="failure-actions" hidden><button type="button" data-mini-action="retry">Retry generation</button><button type="button" data-mini-action="logs">View log</button></div></div></div><footer><button type="button" data-mini-action="roll">Click to roll</button></footer>`;
+    const confirmMini = doc.createElement('button'); confirmMini.type = 'button'; confirmMini.dataset.miniAction = 'confirm-event';
+    confirmMini.textContent = 'Confirm and continue'; confirmMini.hidden = true;
+    eventWindow.querySelector('.red-mini-event').append(confirmMini);
+    const storySwitch = doc.createElement('button'); storySwitch.type = 'button'; storySwitch.className = 'red-story-mode-switch';
+    storySwitch.dataset.miniAction = 'story-mode'; storySwitch.textContent = 'Plot mode';
+    eventWindow.querySelector('.red-mini-toolbar').append(storySwitch);
+    const storyHeadSwitch = storySwitch.cloneNode(true); storyHeadSwitch.removeAttribute('data-mini-action');
+    window.querySelector('.red-window-tools').prepend(storyHeadSwitch);
+    const storyIntro = doc.createElement('dialog'); storyIntro.id = 'red_story_intro';
+    storyIntro.setAttribute('aria-labelledby', 'red_story_intro_title');
+    storyIntro.innerHTML = `<h3 id="red_story_intro_title">Dusk begins by understanding the world</h3><p>On first use or when upgrading an old index, the linked World Info is given to the secondary AI to read and label with plot dates. After that, nearby plot is read when the story has a time; without one, the plot actually injected in the current prompt is used. General settings are always kept.</p><p data-story-intro-status role="status" aria-live="polite"></p><div><button type="button" data-story-intro="later">Read later</button><button type="button" data-story-intro="read">Read World Info</button></div>`;
+    doc.body.append(storyIntro);
+    const introRead = storyIntro.querySelector('[data-story-intro="read"]');
+    const introStatus = storyIntro.querySelector('[data-story-intro-status]');
+    function showStoryIntro() {
+        const state = director.state();
+        if (disposed || !director.settingsState()?.storyMode || state?.storyIndex?.version === 2) return;
+        introStatus.textContent = state ? 'The secondary AI is only called after you click Read; roll for plot once reading finishes.' : 'Open a character chat first, then read its linked World Info.';
+        introRead.disabled = !state || director.busy || Boolean(director.fill);
+        if (!storyIntro.open) { if (storyIntro.showModal) storyIntro.showModal(); else storyIntro.setAttribute('open', ''); }
+    }
+    const closeStoryIntro = () => { if (storyIntro.close) storyIntro.close(); else storyIntro.removeAttribute('open'); };
+    storyIntro.querySelector('[data-story-intro="later"]').addEventListener('click', closeStoryIntro);
+    introRead.addEventListener('click', async () => {
+        const owner = director.state()?.owner; introRead.disabled = true; introStatus.textContent = 'Reading the World Info and labeling plot times…';
+        try {
+            const done = await director.story.prepare({ replace: true, manual: true, rebuild: true, indexOnly: true });
+            if (disposed || director.state()?.owner !== owner) return;
+            if (done) { eventNotice = 'World Info time index saved; roll to start the plot.'; closeStoryIntro(); }
+            else introStatus.textContent = director.state()?.error || 'Cannot read right now; end the running task and retry.';
+        } catch (error) { introStatus.textContent = error.message; }
+        finally { if (!disposed) { introRead.disabled = director.busy || Boolean(director.fill); refresh(); } }
+    });
+    director.requestStoryReading = showStoryIntro;
+    const toggleStory = () => {
+        try { director.update({ storyMode: !director.settingsState()?.storyMode }); eventNotice = ''; }
+        catch (error) { eventNotice = error.message; }
+        refresh();
+        if (director.settingsState()?.storyMode) showStoryIntro(); else closeStoryIntro();
+    };
+    storyHeadSwitch.addEventListener('click', toggleStory);
     const miniToggle = eventWindow.querySelector('.red-mini-toggle');
     miniToggle.addEventListener('pointerdown', event => event.stopPropagation());
     doc.body.append(window, diceDock, eventWindow);
@@ -126,6 +167,15 @@ Enter to send, Shift+Enter for a new line"></textarea><button type="button" data
     }
     function refresh() {
         const state = director.state(), disc = state?.discussion, currentOwner = state?.owner || null;
+        const storyActive = Boolean(director.settingsState()?.storyMode);
+        for (const surface of [window, eventWindow, diceDock]) surface.classList.toggle('red-dusk', storyActive);
+        window.querySelector('[data-page="events"] .red-page-heading h2').textContent = storyActive ? 'Dusk plot' : 'Random events';
+        window.querySelector('[data-page="events"] .red-page-heading p').textContent = storyActive ? 'Understand the world and let a story unfold slowly.' : 'A little surprise to move the story along naturally.';
+        for (const control of [storySwitch, storyHeadSwitch]) {
+            control.textContent = storyActive ? 'Plot mode ☀' : 'Random mode ☾';
+            control.title = storyActive ? 'Switch back to random mode (discards the current pool and plot)' : 'Switch to dusk plot mode (discards the current pool and events)';
+            control.setAttribute('aria-pressed', String(storyActive)); control.disabled = director.busy;
+        }
         if (owner !== currentOwner) { owner = currentOwner; shownFailureId = null; input.value = ''; notice = ''; eventNotice = ''; transcriptKey = ''; pendingId = null; get('event-reveal').open = false; eventWindow.hidden = true; mini('reveal').open = false; }
         const ctx = context(); get('owner').textContent = state ? `${ctx.name2 || 'Current character'} · current chat` : 'No chat open · configuring defaults for new chats';
         const persona = discussionPersona(disc?.persona);
@@ -176,24 +226,33 @@ Enter to send, Shift+Enter for a new line`;
         mini('enabled').checked = Boolean(state?.enabled); mini('enabled').disabled = !state;
         const diceMode = state?.diceMode || 'pool';
         mini('dice-mode').dataset.mode = diceMode;
+        mini('dice-mode').hidden = storyActive;
         mini('dice-mode').setAttribute('aria-label', `Switch roll mode, currently ${diceMode === 'instant' ? 'Instant roll' : 'Regular roll'}`);
-        mini('dice-mode').disabled = !state || director.busy || Boolean(director.fill || director.discussion?.guideTask || state.majorEvent);
+        mini('dice-mode').disabled = !state || director.busy || Boolean(director.fill || director.discussion?.guideTask || state.majorEvent || state.progression);
         get('event-count').textContent = state ? `${state.eventPool.length} / ${state.targetCount}` : '—';
-        get('event-trigger-label').textContent = state?.diceMode === 'instant' ? 'Instant situation' : state?.fixedRoundEnabled ? 'Fixed-round trigger' : 'Trigger probability';
-        get('event-probability').textContent = state ? (state.diceMode === 'instant' ? 'Manual · once' : state.fixedRoundEnabled ? `Every ${state.fixedRoundInterval} rounds` : `${state.triggerProbability}%`) : '—';
+        get('event-trigger-label').textContent = state?.diceMode === 'instant' ? 'Instant situation' : state?.progressionMode ? 'Ongoing event' : state?.fixedRoundEnabled ? 'Fixed-round trigger' : 'Trigger probability';
+        get('event-probability').textContent = state ? (state.diceMode === 'instant' ? 'Manual · once' : state.progressionMode ? '3 rounds per event' : state.fixedRoundEnabled ? `Every ${state.fixedRoundInterval} rounds` : `${state.triggerProbability}%`) : '—';
         const actionRunning = Boolean(eventTask), rolling = diceAnimating || (eventTask?.owner === currentOwner && eventTask?.action === 'roll');
         const preparing = Boolean(director.fill || director.discussion?.guideTask);
         const failure = state?.refillStopped ? state.generationFailure : null;
         const failed = Boolean(failure && !preparing && !actionRunning);
-        get('event-label').textContent = pending ? (pending.instant ? 'Instant situation · waiting for this round\'s generation' : 'Drawn · waiting for this round\'s generation') : (preparing || actionRunning ? 'Chuyue is preparing an event' : 'The next surprise, not revealed yet');
+        const needsConfirmation = Boolean(pending && state.diceMode !== 'instant' && state.progressionMode && !state.pendingEvent.confirmed);
+        get('event-label').textContent = pending ? (pending.instant ? 'Instant situation · waiting for this round\'s generation' : needsConfirmation ? 'Drawn · awaiting confirmation' : state.progressionMode ? 'Confirmed · waiting for this round\'s generation' : 'Drawn · waiting for this round\'s generation') : (preparing || actionRunning ? 'Chuyue is preparing an event' : 'The next surprise, not revealed yet');
         get('event-title').textContent = pending?.title || (state ? 'Give the story a few more possibilities' : 'Open a chat first');
-        get('event-hint').textContent = pending ? (pending.instant ? 'Instant situation event ready. Used once in the next main chat; the temporary pool was discarded and the regular pool kept.' : state.majorEvent && pending.id === state.majorEvent.id
+        get('event-hint').textContent = pending ? (pending.instant ? 'Instant situation event ready. Used once in the next main chat; the temporary pool was discarded and the regular pool kept.' : state.progressionMode
+            ? (needsConfirmation ? 'You can view it, reroll, or confirm and continue. Until confirmed, this event is not used and the event pool\'s direction does not change.'
+                : state.progression?.stageIndex > 0 ? 'The follow-up was drawn automatically; just continue the main chat. After the same event unfolds over three successful reply rounds, the next one is drawn automatically.'
+                    : 'Continue the main chat; once it takes effect, a related pool is generated and follow-up events begin, each unfolding over three rounds.') : state.majorEvent && pending.id === state.majorEvent.id
             ? `Major event ready; timing starts after the first successful reply and lasts ${state.majorEvent.duration} rounds.`
             : 'Event ready; takes effect in the corresponding normal generation, and this injection ends after a successful reply.') : 'Keep natural random triggers, or roll the die yourself for a small change.';
         get('event-reveal').hidden = !pending; get('event-content').textContent = pending?.content || '';
+        for (const confirm of [button('confirm-event'), confirmMini]) {
+            confirm.hidden = !needsConfirmation; confirm.disabled = !state?.enabled || director.busy || preparing || actionRunning;
+        }
         get('event-recent').textContent = state?.recentEvent?.title || 'None yet';
         window.querySelector('.red-event-footnote').textContent = state?.diceMode === 'instant'
-            ? 'Instant situation only generates candidates related to the current activity, draws once at random, then discards the temporary pool. Each roll calls the secondary AI once more; no automatic draws and no continuous progression.'
+            ? 'Instant situation only generates candidates related to the current activity, draws once at random, then discards the temporary pool. Each roll calls the secondary AI once more; no automatic draws and no continuous progression.' : state?.progressionMode
+            ? 'The die opens the side window. After the opening event is confirmed, each follow-up lasts three successful reply rounds, five follow-ups by default; you can pause or end at any time.'
             : 'The die opens the action window; once enabled, click the roll button inside it to draw an event. It takes effect when you continue the main chat and never sends a message by itself.';
         const stoppedNotice = state?.refillStopped && !preparing && !actionRunning ? 'Event generation is paused; use the prepare button or "Retry generation" in the dice window.' : '';
         get('event-notice').textContent = state?.error || eventNotice || stoppedNotice || (!state?.enabled && state ? 'Paused; tick "Turn on random events" in the dice window or above to continue.' : '');
@@ -210,18 +269,20 @@ Enter to send, Shift+Enter for a new line`;
         floatingDie.title = diceTitle; button('roll').title = diceTitle;
         floatingDie.setAttribute('aria-busy', String(actionRunning || preparing)); button('roll').setAttribute('aria-busy', String(actionRunning || preparing));
         diceDock.hidden = Boolean(director.settingsState()?.hideDice);
-        const major = state?.majorEvent;
-        diceDock.classList.toggle('red-major-active', Boolean(major));
+        const major = state?.progression || state?.majorEvent;
+        diceDock.classList.toggle('red-major-active', Boolean(major || state?.storyEpisode));
         for (const card of [window.querySelector('[data-major-card]'), diceDock.querySelector('[data-major-card]')]) {
             card.hidden = !major;
-            card.querySelector('small').textContent = 'Major event';
-            card.querySelector('[data-major-role="title"]').textContent = major?.event.title || '';
-            card.querySelector('[data-major-role="turns"]').textContent = major
+            card.querySelector('small').textContent = state?.progression ? 'Ongoing event' : 'Major event';
+            card.querySelector('[data-major-role="title"]').textContent = state?.progression && state.pendingEvent?.confirmed ? pending?.title : major?.event.title || '';
+            card.querySelector('[data-major-role="turns"]').textContent = state?.progression
+                ? `${state.enabled ? '' : 'Paused · '}${major.started ? (major.awaitingNext ? `等待准备下个事件 · 已完成 ${major.stageIndex} / ${major.cycles} 个后续`
+                    : `第 ${major.stageIndex} / ${major.cycles} 个后续 · 本事件剩余 ${major.stageRemaining} / 3 回合`) : `起始方向待生效 · 之后推进 ${major.cycles} 个后续`}` : major
                 ? `${state.enabled ? '' : 'Paused · '}${major.remaining} / ${major.duration} rounds left${major.started ? (major.remaining === 1 ? ' · closing this round' : '') : ' · waiting to take effect'}` : '';
             card.querySelector('button').disabled = !major || director.busy || actionRunning;
-            card.querySelector('button').textContent = 'End major event';
+            card.querySelector('button').textContent = state?.progression ? 'End ongoing event' : 'End major event';
         }
-        diceFeedback.textContent = failed ? 'Generation failed' : (preparing || actionRunning ? 'Preparing…' : (pending ? 'Enabled this round' : eventNotice));
+        diceFeedback.textContent = failed ? 'Generation failed' : (preparing || actionRunning ? 'Preparing…' : (pending ? (needsConfirmation ? 'Awaiting confirmation' : 'Enabled this round') : eventNotice));
         mini('label').textContent = failed ? 'Generation failed · paused' : get('event-label').textContent;
         mini('title').textContent = failed ? 'Event not generated' : (preparing || actionRunning ? 'Preparing event…' : (pending?.title || (state ? 'No event this round' : 'Open a chat first')));
         mini('hint').textContent = !state?.enabled ? 'Paused. Random events continue only after ticking the switch above; the main chat works normally.' : failed ? `Reason: ${failure.message}` : (preparing || actionRunning ? (director.fill?.kind === 'instant' ? 'Reading the current situation, generating temporary candidates and drawing once…' : 'The draw result will show here when ready.') : (pending ? get('event-hint').textContent : (director.busy ? 'The main AI is generating; roll again shortly.' : state?.diceMode === 'instant' ? 'Every roll re-reads the current situation, generates temporarily and draws once. A fight stays on the fight, a date stays on the date; no pool is saved.' : 'Click the button below to draw; it takes effect when you continue the main chat.')));
@@ -235,6 +296,29 @@ Enter to send, Shift+Enter for a new line`;
         rollMini.disabled = !state?.enabled || (pending ? button('reroll').disabled
             : director.busy || preparing || actionRunning || Boolean(failure));
         retry.textContent = preparing || actionRunning ? 'Retrying…' : 'Retry generation';
+        if (storyActive) {
+            const episode = state?.storyEpisode;
+            const title = episode?.event.title || (state?.storyHalted ? 'Plot stopped' : 'Waiting for the next plot segment');
+            const hint = episode ? `Based on ${episode.reference || episode.date || state.storyReferenceLabel || state.storyDate || 'current plot'} · unfolded ${episode.turns}  rounds. Continue the main chat; the main AI decides when it is complete. Reroll if you are not happy with it.`
+                : state?.storyHalted || state?.storyManual ? 'Roll below to start a new plot segment.' : 'After the first manual World Info read, related material is prepared and a plot is drawn; you still send the main chat yourself.';
+            get('event-trigger-label').textContent = 'World Info plot';
+            get('event-probability').textContent = state?.storyIndex?.version === 2 ? state.storyDate || state.storyReferenceLabel || 'Uses the prompt when undated' : 'Waiting to read the time index';
+            get('event-label').textContent = episode ? 'Dusk plot · in progress' : 'Dusk plot · not started';
+            get('event-title').textContent = title; get('event-hint').textContent = hint;
+            get('event-reveal').hidden = !episode; get('event-content').textContent = episode?.event.content || '';
+            window.querySelector('.red-event-footnote').textContent = 'With a date, nearby plot is read by time; without one, the currently injected plot is used. It moves to the next segment after a full reply clearly marks completion. You can pause, reroll or end at any time.';
+            if (!failed && !preparing && !actionRunning) { mini('label').textContent = get('event-label').textContent; mini('title').textContent = title; mini('hint').textContent = hint; }
+            if (preparing) mini('hint').textContent = director.fill?.kind === 'story-index' ? 'Reading all entries and labeling plot times…' : 'Reading the date or the plot in the current prompt and preparing outlines…';
+            mini('reveal').hidden = !episode; mini('content').textContent = episode?.event.content || '';
+            button('reroll').disabled = !state?.enabled || director.busy || preparing || actionRunning;
+            rollMini.disabled = !state?.enabled || director.busy || preparing || actionRunning || Boolean(failure);
+            for (const card of [window.querySelector('[data-major-card]'), diceDock.querySelector('[data-major-card]')]) {
+                card.hidden = !episode; card.querySelector('small').textContent = 'Dusk plot';
+                card.querySelector('[data-major-role="title"]').textContent = title;
+                card.querySelector('[data-major-role="turns"]').textContent = `${episode?.reference || episode?.date || state?.storyReferenceLabel || state?.storyDate || 'current plot'} · unfolded ${episode?.turns || 0} rounds${state?.enabled ? '' : ' · paused'}`;
+                card.querySelector('button').textContent = 'End current plot'; card.querySelector('button').disabled = director.busy || actionRunning;
+            }
+        }
         if (!failure) shownFailureId = null;
         const showFailure = failed && shownFailureId !== failure.id;
         if (showFailure) { shownFailureId = failure.id; eventWindow.hidden = false; }
@@ -246,6 +330,10 @@ Enter to send, Shift+Enter for a new line`;
         if (action === 'open-dice') { showEvent(); return; }
         if (action === 'roll' || action === 'retry') showEvent();
         const state = director.state(), currentOwner = state?.owner;
+        if (action === 'confirm-event') {
+            if (director.confirmEvent()) eventNotice = 'Confirmed; continue the main chat. Related follow-ups are prepared once it takes effect.';
+            refresh(); return;
+        }
         const cancellingMajor = action === 'end-major' || (action === 'reroll' && state?.majorEvent && !state.majorEvent.started);
         if (!state || (!state.enabled && !cancellingMajor) || eventTask || director.busy || (!cancellingMajor && (director.fill || director.discussion?.guideTask)) || (action === 'roll' && (state.pendingEvent || (state.refillStopped && state.generationFailure)))) return;
         const token = { action, owner: currentOwner }; eventTask = token;
@@ -256,7 +344,7 @@ Enter to send, Shift+Enter for a new line`;
         }
         try {
             eventNotice = action === 'roll' ? 'Rolling and preparing an event…' : 'Updating event pool…';
-            const task = action === 'end-major' ? director.endMajor() : action === 'retry' ? director.retryGeneration()
+            const task = action === 'end-major' ? (state.storyMode ? director.story.end() : state.progression ? director.endProgression() : director.endMajor()) : action === 'retry' ? director.retryGeneration()
                 : action === 'reroll' ? director.reroll()
                     : action === 'regenerate-pool' ? director.regeneratePool()
                         : action === 'roll' ? director.rollNow() : director.refill(true); refresh();
@@ -264,8 +352,8 @@ Enter to send, Shift+Enter for a new line`;
             if (disposed || director.state()?.owner !== currentOwner) return;
             refresh();
                 const current = director.state();
-                eventNotice = action === 'end-major' && done ? 'The current event line has ended; back to the regular event pool.' : done ? (!['prepare-pool', 'regenerate-pool'].includes(action)
-                    ? 'This round\'s event is enabled; just continue the main chat.' : 'Event pool updated, waiting for the story\'s next scene.')
+                eventNotice = action === 'end-major' && done ? (current?.storyMode ? 'The current plot has ended; waiting for you to roll again.' : 'The current event line has ended; back to the regular event pool.') : done ? (!['prepare-pool', 'regenerate-pool'].includes(action)
+                    ? (current?.progressionMode && !current.pendingEvent?.confirmed ? 'An event was drawn; you can confirm it or reroll.' : 'This round\'s event is enabled; just continue the main chat.') : 'Event pool updated, waiting for the story\'s next scene.')
                     : current?.poolGenerated && !current.eventPool.length && !current.discussion.guide && !current.refillStopped
                         ? 'The event pool is used up; wait for the refresh round, or refresh it by hand.' : 'No new event enabled this time; check the connection or try again later.';
         } catch (e) { if (!disposed && director.state()?.owner === currentOwner) eventNotice = e.message; }
@@ -301,7 +389,7 @@ Enter to send, Shift+Enter for a new line`;
             else if (action === 'retry-guide') void director.discussion.prepareGuide();
             else if (action === 'clear') director.discussion.clearHistory();
             else if (action === 'roll') { showEvent(); return; }
-            else if (['reroll', 'prepare-pool', 'regenerate-pool', 'end-major'].includes(action)) { void eventAction(action); return; }
+            else if (['reroll', 'prepare-pool', 'regenerate-pool', 'end-major', 'confirm-event'].includes(action)) { void eventAction(action); return; }
         } catch (e) { notice = e.message; }
         refresh();
     }
@@ -309,7 +397,7 @@ Enter to send, Shift+Enter for a new line`;
         if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); void send(); }
     };
     const launch = event => { const target = event.target.closest('[data-launch]'); if (target) open(target.dataset.launch); };
-    const throwDice = () => { showEvent(); };
+    const throwDice = () => { if (eventWindow.hidden) showEvent(); else eventWindow.hidden = true; };
     const change = event => {
         try {
             if (event.target === get('enable-events')) director.update({ enabled: event.target.checked });
@@ -331,13 +419,15 @@ Enter to send, Shift+Enter for a new line`;
     const miniClick = event => {
         const action = event.target.closest('[data-mini-action]')?.dataset.miniAction;
         if (action === 'close') eventWindow.hidden = true;
+        else if (action === 'story-mode') toggleStory();
         else if (action === 'switch-mode') {
             try { director.update({ diceMode: director.state()?.diceMode === 'instant' ? 'pool' : 'instant' }); eventNotice = ''; }
             catch (e) { eventNotice = e.message; }
             refresh();
         }
-        else if (action === 'roll') void eventAction(director.state()?.pendingEvent ? 'reroll' : 'roll');
+        else if (action === 'roll') void eventAction(director.state()?.pendingEvent || director.state()?.storyEpisode ? 'reroll' : 'roll');
         else if (action === 'retry') void eventAction('retry');
+        else if (action === 'confirm-event') void eventAction('confirm-event');
         else if (action === 'logs') { eventWindow.hidden = true; open('logs'); }
         else if (action === 'director') { eventWindow.hidden = true; open('events'); }
     };
@@ -376,6 +466,8 @@ Enter to send, Shift+Enter for a new line`;
         eventWindow.removeEventListener('click', miniClick); eventWindow.remove();
         eventWindow.removeEventListener('change', miniChange);
         floatingDie.removeEventListener('click', throwDice); diceDock.remove();
+        if (director.requestStoryReading === showStoryIntro) director.requestStoryReading = null;
+        storyIntro.remove();
         diagnosticsUI.dispose();
         updateUI.dispose();
         observer?.disconnect(); menuButton.removeEventListener('click', fromMenu); menuButton.remove(); entry.removeEventListener('click', launch); entry.remove();

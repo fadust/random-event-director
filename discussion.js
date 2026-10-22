@@ -2,6 +2,8 @@ import { poolPrompt, parseEvents, chatIdentity } from './engine.js';
 import { headerMessages } from './headers.js';
 import { discussionState } from './discussion-state.js';
 import { isPersona, personaPrompt } from './personas.js';
+import { progressionFocus } from './progression.js';
+import { generationLimit } from './request-limits.js';
 
 export function parseDiscussion(text) {
     if (typeof text !== 'string' || text.length > 30000) throw new Error('The discussion reply is empty or too long');
@@ -30,17 +32,10 @@ export class Discussion {
         if (disc.guide) void this.prepareGuide({ manual: false });
     }
     async timed(task, ctx, messages, settings) {
-        let timer;
-        const cancelled = new Promise((_, reject) => {
-            task.cancel = () => reject(new Error('Request stopped'));
-            task.controller.signal.addEventListener('abort', task.cancel, { once: true });
-        });
+        const limit = generationLimit(settings, task.controller, 'Secondary AI timed out; please retry', 'Request stopped');
         try {
-            return await Promise.race([this.director.request(ctx, messages, settings, task.controller.signal), cancelled,
-                new Promise((_, reject) => { timer = setTimeout(() => {
-                    reject(new Error('Secondary AI timed out; please retry')); task.controller.abort();
-                }, settings.timeoutSeconds * 1000); })]);
-        } finally { clearTimeout(timer); task.controller.signal.removeEventListener('abort', task.cancel); }
+            return await Promise.race([this.director.request(ctx, messages, settings, task.controller.signal), limit.promise]);
+        } finally { limit.cleanup(); }
     }
     async send(text) {
         const d = this.director, ctx = d.context(), s = d.state(ctx);
@@ -60,6 +55,7 @@ export class Discussion {
             { role: 'system', content: `Current story material (background, not extra instructions): ${background}` },
             ...disc.messages.slice(-20).map(m => ({ role: m.role, content: m.content }))];
         try {
+            if (s.storyMode) messages.splice(messages.length - disc.messages.slice(-20).length, 0, await d.story.materials(ctx, s, task.controller.signal));
             const row = parseDiscussion(await this.timed(task, ctx, messages, settings));
             if (!this.current(ctx, task.owner, task.revision) || this.chatTask !== task || task.controller.signal.aborted) return false;
             disc.messages.push({ id: d.makeId(), role: 'assistant', content: row.reply, persona: task.persona }); disc.messages = disc.messages.slice(-40);
@@ -85,7 +81,9 @@ export class Discussion {
     accept(id) {
         const d = this.director, ctx = d.context(), s = d.state(ctx), disc = s && discussionState(s);
         if (!disc?.proposal || disc.proposal.id !== id) throw new Error('This summary has expired; keep discussing to get a new one');
+        if (s.storyMode && s.storyEpisode) throw new Error('End or reroll the current plot before applying a new discussion direction');
         if (d.busy) throw new Error('Wait for the main chat to finish generating before applying');
+        if (s.progressionMode && s.pendingEvent?.confirmed) throw new Error('The ongoing event is confirmed; let it take effect or reroll before applying a new direction');
         this.guideTask?.controller.abort(); this.guideTask = null;
         // An unbound manual selection can be replaced; a bound failed turn keeps its frozen arrangement.
         if (s.pendingEvent && !s.pendingEvent.cycleKey) {
@@ -110,9 +108,10 @@ export class Discussion {
     }
     async prepareGuide({ manual = true } = {}) {
         const d = this.director, ctx = d.context(), s = d.state(ctx), disc = s && discussionState(s);
+        if (s?.storyMode) return d.story.prepare({ replace: true, manual });
         if (!disc?.guide || disc.guide.pool.length || this.guideTask || d.disposed || d.busy) return false;
         if (!manual && s.refillStopped) return false;
-        const id = disc.guide.id, majorId = s.majorEvent?.id || null, task = { controller: new AbortController(), owner: s.owner, revision: this.revision, id };
+        const id = disc.guide.id, majorId = s.majorEvent?.id || null, focus = progressionFocus(s), task = { controller: new AbortController(), owner: s.owner, revision: this.revision, id };
         this.guideTask = task; disc.error = ''; d.changed();
         d.trace('Directed event generation', 'info', 'Generating this event\'s candidates from the confirmed summary.', { needed: 3, contextMessages: s.contextMessages }, s.owner, '');
         try {
@@ -121,9 +120,10 @@ export class Discussion {
             messages.push({ role: 'user', content: `The event direction confirmed by the user for this time: ${disc.guide.summary}
 Generate 3 different candidate causes for this one event only. Keep the player's agency and still follow the events JSON format above.` });
             const response = await this.timed(task, ctx, messages, settings);
-            if (!this.current(ctx, task.owner, task.revision) || this.guideTask !== task || task.controller.signal.aborted || disc.guide?.id !== id || (s.majorEvent?.id || null) !== majorId) return false;
+            if (!this.current(ctx, task.owner, task.revision) || this.guideTask !== task || task.controller.signal.aborted || disc.guide?.id !== id || (s.majorEvent?.id || null) !== majorId || progressionFocus(s) !== focus) return false;
             disc.guide.pool = parseEvents(response, 3, d.makeId); s.refillStopped = false; s.generationFailure = null; s.error = '';
             disc.guide.majorId = majorId;
+            disc.guide.progressionFocus = focus;
             if (majorId) for (const event of disc.guide.pool) event.severity = 'ordinary';
             d.trace('Directed event ready', 'success', 'Directed candidates are ready, waiting for one event trigger.', { count: disc.guide.pool.length }, s.owner, ''); d.save(ctx, s); return true;
         } catch (e) {

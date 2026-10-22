@@ -10,8 +10,18 @@ export function mountUI(director, context, doc = document) {
     root.innerHTML = `<summary>Random Event Director <small>V${CURRENT_VERSION}</small></summary>
       <div class="red-body">
       <p class="red-help" data-role="settings-scope"></p>
-      <section class="red-settings-section"><h3>Event triggering</h3><div class="red-settings-content">
+      <section class="red-settings-section" data-role="story-settings" hidden><h3>Dusk · plot mode</h3><div class="red-settings-content">
+        <p class="red-help" data-role="story-index-status"></p>
+        <div class="red-setting-row"><label><input type="checkbox" data-setting="storyManual"> Turn off auto-roll</label>
+        ${settingHelp('Plot mode auto-roll', '<p>By default the next segment is prepared automatically when this plot segment completes. When ticked it waits for you to roll again; it also stops after a manual end.</p>')}</div>
+        <div class="red-actions"><button type="button" class="menu_button" data-action="story-index">Rebuild plot index</button><button type="button" class="menu_button" data-action="story-end">End current plot</button></div>
+        ${settingHelp('Plot World Info', '<p>Read it manually the first time; the secondary AI labels every linked entry, including disabled ones, with a plot date or time range. When generating a pool, nearby plot is read if the story has a date; without a date the current main prompt is previewed automatically and the pool is generated from the plot or volume actually injected. Characters and basic settings are used as general material.</p><p>Without a date the prompt preview is used automatically, so there is no need to turn on "Prompt reference", and no main AI request is sent. The preview is subject to the read length cap; if assembly fails it stops and shows why. EJS is only recognized, never executed. Read again after an old stage index or a World Info entry change.</p>')}
+      </div></section>
+      <section class="red-settings-section"><h3>Triggers and progression</h3><div class="red-settings-content">
         <label class="red-primary-toggle"><input type="checkbox" data-setting="enabled"> <span data-role="enabled-label">Turn on Random Event Director for this chat</span></label>
+        <div class="red-setting-row"><label><input type="checkbox" data-setting="progressionMode"> Ongoing event mode</label>
+        ${settingHelp('Ongoing event mode', '<p>First draw and confirm an opening event. After a successful main chat reply, a related pool is generated and a follow-up is drawn automatically; each follow-up lasts 3 successful reply rounds, then the pool is regenerated and the next one drawn. 5 follow-up events by default, and you can end it at any time.</p><p>Reuses the selected director preset; failures, regenerations and pauses do not advance the count, and this mode pauses probability and fixed-round auto-draws.</p>')}</div>
+        <div class="red-setting-field red-conditional-setting" data-role="progression-settings" hidden><label class="red-column">Follow-up events<input class="text_pole" type="number" min="1" max="20" data-setting="progressionCycles"></label></div>
         <div class="red-setting-row"><label><input type="checkbox" data-setting="fixedRoundEnabled"> Fixed-round random</label>
         ${settingHelp('Fixed-round random', '<p>Triggers every set number of rounds; when off, probability triggering returns. Counted after a full reply; regenerations and background requests are not counted twice.</p>')}</div>
         <div class="red-setting-field red-conditional-setting" data-role="fixed-rounds" hidden><label class="red-column">Fixed round count<input class="text_pole" type="number" min="1" max="100" data-setting="fixedRoundInterval"></label><p class="red-help" data-role="fixed-progress"></p></div>
@@ -40,7 +50,9 @@ export function mountUI(director, context, doc = document) {
         ${settingHelp('Event pool refresh limit', '<p>Each event pool picks a refresh round at random between 5 rounds and the limit set here, refreshing at most every 10 rounds.</p><p>If used up before then it is not refilled automatically, and rolling does not refill it early; you can refresh the pool by hand. At expiry unused candidates are refreshed too, and drawn events are kept.</p>')}</div>
         <div class="red-setting-field"><label class="red-column">Major event duration (rounds)<input class="text_pole" type="number" min="1" max="20" data-setting="majorEventTurns"></label>
         ${settingHelp('Major event duration (rounds)', '<p>Lasts 5 successful reply rounds by default, using the related event pool, and the last round tries to close naturally. After expiry or a manual end, the regular pool returns.</p><p>Failures and regenerations of the same round are not counted twice. Changing the duration only affects major events drawn afterwards.</p>')}</div>
-        <div class="red-setting-field"><label class="red-column">Secondary AI timeout (seconds)<input class="text_pole" type="number" min="5" max="180" data-setting="timeoutSeconds"></label></div>
+        <div class="red-setting-field"><div class="red-setting-row"><label for="red-ai-timeout">Secondary AI timeout (seconds)</label><label><input type="checkbox" data-setting="unlimitedGenerationTime"> No time limit</label></div>
+        <input id="red-ai-timeout" class="text_pole" type="number" min="5" max="600" data-setting="timeoutSeconds">
+        ${settingHelp('Secondary AI generation time', '<p>"No time limit" is ticked by default: it waits for generation to finish and you can stop it by hand. Untick it to limit by the seconds entered, from 5 to 600.</p><p>Applies to event generation, side-window discussion and the first World Info read; the API service\'s own timeout still applies.</p>')}</div>
         <div class="red-setting-row red-setting-wide"><label><input type="checkbox" data-setting="outgoingInjection"> Enhanced event injection</label>
         ${settingHelp('Enhanced event injection', '<p>For the first two injection modes: before sending, restore this round\'s event if missing and tidy duplicate copies, keeping other extensions\' content. Turn off if a special preset is incompatible.</p><p>Force mode always writes the event, regardless of this switch.</p>')}</div>
       </div></details>
@@ -71,13 +83,21 @@ export function mountUI(director, context, doc = document) {
         try { chat = director.state(); s = director.settingsState(); } catch (e) { field('status').textContent = e.message; return; }
         field('settings-scope').textContent = chat ? 'Editing settings for the current chat.' : 'No chat open: you can configure the API and presets; the options below are saved as defaults for new chats and do not change existing chats.';
         field('enabled-label').textContent = chat ? 'Turn on Random Event Director for this chat' : 'Turn on Random Event Director by default for new chats';
+        root.classList.toggle('red-dusk', Boolean(s?.storyMode));
+        field('story-settings').hidden = !s?.storyMode;
+        field('story-index-status').textContent = director.fill?.kind === 'story-index' ? 'Reading the whole World Info and labeling plot times…' : chat?.storyIndex?.version === 2
+            ? `Time index ${chat.storyIndex.keys.length} entries · ${chat.storyDate || chat.storyReferenceLabel || 'Uses the current prompt when undated'}${chat.storyEpisode ? ` · 已展开 ${chat.storyEpisode.turns} rounds` : ''}` : chat?.storyIndex ? 'The old stage index needs to be read again to label plot times.' : 'No time index yet; read the World Info manually first.';
+        root.querySelector('[data-action="story-index"]').textContent = chat?.storyIndex?.version === 2 ? 'Rebuild time index' : 'Read World Info';
+        field('progression-settings').hidden = !s?.progressionMode;
         if (s?.owner !== lastOwner) { notice = ''; lastOwner = s?.owner; }
         if (!s?.pendingEvent && notice === 'A random event is ready and takes effect on the next normal generation.') notice = '';
         connectionUI.refresh();
         for (const el of root.querySelectorAll('[data-setting]')) {
             const name = el.dataset.setting;
-            el.disabled = !s || (name === 'model' && s.useCurrentModel) || (name === 'triggerProbability' && s.fixedRoundEnabled)
-                || (['injectionMode', 'useMainPromptContext'].includes(name) && director.busy);
+            el.disabled = !s || (name === 'model' && s.useCurrentModel) || (name === 'triggerProbability' && (s.fixedRoundEnabled || s.progressionMode))
+                || (name === 'timeoutSeconds' && s.unlimitedGenerationTime)
+                || (['fixedRoundEnabled', 'fixedRoundInterval'].includes(name) && s.progressionMode)
+                || (['injectionMode', 'useMainPromptContext', 'progressionMode'].includes(name) && director.busy);
             if (el.type === 'checkbox') el.checked = Boolean(s?.[name]);
             else if (doc.activeElement !== el) el.value = s?.[name] ?? '';
         }
@@ -89,10 +109,16 @@ export function mountUI(director, context, doc = document) {
         field('fixed-progress').textContent = chat ? `Progress ${chat.fixedRoundProgress} / ${s.fixedRoundInterval} rounds`
             : 'New chats count from the first round.';
         field('count').textContent = chat ? `Available event pool: ${chat.eventPool.length} / ${chat.targetCount}${director.fill ? ' · secondary AI generating…' : ''}` : 'Open a chat before generating events.';
-        field('pending').textContent = chat?.pendingEvent ? 'A random event is ready and takes effect on the corresponding next normal generation.' : 'No pending event.';
+        field('pending').textContent = chat?.pendingEvent ? (chat.progressionMode && !chat.pendingEvent.confirmed
+            ? 'An event was drawn; confirm it on the Random events page or the die side window to use it.' : 'A random event is ready and takes effect on the corresponding next normal generation.') : 'No pending event.';
         field('recent').textContent = `Last triggered: ${chat?.recentEvent?.title || 'None yet'}`;
         field('status').textContent = chat?.error || notice || (chat?.refillStopped && !director.fill && !director.discussion?.guideTask ? 'Event generation is paused; use the generate button or "Retry generation" in the dice window.' : '');
         for (const button of root.querySelectorAll('[data-action]')) button.disabled = !chat?.enabled || director.busy || Boolean(director.fill);
+        for (const name of ['progressionMode', 'fixedRoundEnabled', 'fixedRoundInterval', 'triggerProbability']) {
+            const control = root.querySelector(`[data-setting="${name}"]`); if (control && s?.storyMode) control.disabled = true;
+        }
+        root.querySelector('[data-action="story-index"]').disabled = !chat || director.busy || Boolean(director.fill || chat.storyEpisode || director.discussion?.chatTask);
+        root.querySelector('[data-action="story-end"]').disabled ||= !chat?.storyEpisode;
         const list = root.querySelector('#red-models'); list.replaceChildren();
         const models = new Set();
         for (const select of doc.querySelectorAll('select[id*="model"]')) for (const option of select.options) {
@@ -128,12 +154,13 @@ export function mountUI(director, context, doc = document) {
         const owner = director.state()?.owner;
         try {
             notice = '';
-            const task = action === 'roll' ? director.rollNow() : director.refill(true);
+            const task = action === 'story-index' ? director.story.prepare({ replace: true, manual: true, rebuild: true, indexOnly: true })
+                : action === 'story-end' ? director.story.end() : action === 'roll' ? director.rollNow() : director.refill(true);
             refresh();
             const done = await task;
             if (director.state()?.owner !== owner) { refresh(); return; }
             const state = director.state();
-            notice = done ? (action === 'roll' ? 'A random event is ready and takes effect on the next normal generation.' : 'Event pool updated.')
+            notice = done ? (action === 'story-index' ? 'Plot index saved in full.' : action === 'story-end' ? 'The current plot has ended; waiting for the next roll.' : action === 'roll' ? 'A random event is ready and takes effect on the next normal generation.' : 'Event pool updated.')
                 : state?.poolGenerated && !state.eventPool.length && !state.discussion.guide && !state.refillStopped
                     ? 'The event pool is used up; wait for the refresh round, or refresh it by hand.' : 'No new event prepared this time; normal chat can continue.';
         } catch (e) { director.fail(e); }
